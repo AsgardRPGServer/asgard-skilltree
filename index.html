@@ -1,0 +1,1189 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Asgard スキルツリー体験</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 上に設定バー、左に拡大縮小できるツリー（主役）、右に選択中のマスのカードとステータス。狭い画面では縦に積む */
+:root {
+  --bg: #eef0f4; --panel: #ffffff; --fg: #1b2030; --muted: #5d6578; --line: #d6dbe5; --soft: #eef1f6;
+  --canvas: #f7f8fb; --link: #b9c1d0; --wall: #6b7488;
+  --accent: #2f7d4f; --accent-soft: #d9efe1; --accent-ink: #1f6a3f;
+  --path: #e0921a; --gate: #3c8aa8; --notable: #2f6fc4; --keystone: #8247c2; --start: #d39a1b; --blocked: #3a3f4c; --bad: #c0364a; --hit: #e0267f;
+  --st-ad: #d2533f; --st-df: #3a78c9; --st-md: #9a52c6; --st-as: #2e9a5e; --st-ms: #c38a18;
+  --t-df: #e6eef9; --t-ad: #f9e9e6; --t-as: #e6f4ea; --t-md: #f8f1de; --t-ms: #eceff3; --t-mix: #f0e9f6; --t-center: #fbf2d2; --t-frontier: #eaecf0; --t-shrine: #dff3df;
+  --f-display: "Zen Maru Gothic", "Zen Kaku Gothic New", system-ui, sans-serif;
+  --f-body: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12151d; --panel: #1a1e29; --fg: #e6e9f1; --muted: #9aa2b6; --line: #2c3242; --soft: #222838;
+  --canvas: #151924; --link: #3a4256; --wall: #8d96ab;
+  --accent: #5fcf8a; --accent-soft: #1f3a2b; --accent-ink: #8fe3ad;
+  --path: #f2ac3e; --gate: #5fb7d6; --notable: #6aa6f2; --keystone: #b88cf0; --start: #ecb83e; --blocked: #0b0d12; --bad: #f07b8c; --hit: #ff5fae;
+  --st-ad: #f07a66; --st-df: #6ea4ef; --st-md: #c08ae8; --st-as: #5fcf8a; --st-ms: #e8b444;
+  --t-df: #1b2638; --t-ad: #2e1f22; --t-as: #1a2b22; --t-md: #2c281b; --t-ms: #20252e; --t-mix: #261f31; --t-center: #332c14; --t-frontier: #1d2029; --t-shrine: #17301e;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #12151d; --panel: #1a1e29; --fg: #e6e9f1; --muted: #9aa2b6; --line: #2c3242; --soft: #222838;
+  --canvas: #151924; --link: #3a4256; --wall: #8d96ab;
+  --accent: #5fcf8a; --accent-soft: #1f3a2b; --accent-ink: #8fe3ad;
+  --path: #f2ac3e; --gate: #5fb7d6; --notable: #6aa6f2; --keystone: #b88cf0; --start: #ecb83e; --blocked: #0b0d12; --bad: #f07b8c; --hit: #ff5fae;
+  --st-ad: #f07a66; --st-df: #6ea4ef; --st-md: #c08ae8; --st-as: #5fcf8a; --st-ms: #e8b444;
+  --t-df: #1b2638; --t-ad: #2e1f22; --t-as: #1a2b22; --t-md: #2c281b; --t-ms: #20252e; --t-mix: #261f31; --t-center: #332c14; --t-frontier: #1d2029; --t-shrine: #17301e;
+  color-scheme: dark; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 14px; line-height: 1.6; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; display: grid; gap: 14px; }
+h1 { font-family: var(--f-display); font-size: clamp(21px, 3vw, 27px); margin: 0; text-wrap: balance; }
+h2 { font-family: var(--f-display); font-size: 16px; margin: 0; }
+p { margin: 0; max-width: 75ch; }
+.muted { color: var(--muted); } .small { font-size: 12.5px; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+.bar { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+.field { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--muted); flex-wrap: wrap; }
+select, button, input[type=number], input[type=text], input[type=search] { font: inherit; font-size: 13.5px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 5px 10px; }
+input[type=number] { width: 4.6em; font-family: var(--f-mono); }
+input[type=search] { width: min(18em, 100%); }
+input[type=range] { accent-color: var(--accent); width: 150px; }
+button { cursor: pointer; }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); font-weight: 700; }
+button.big { font-size: 15px; padding: 9px 16px; }
+button:focus-visible, select:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px solid var(--path); outline-offset: 2px; }
+.seg { display: inline-flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 5px 12px; background: var(--panel); display: inline-flex; gap: 6px; align-items: center; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--panel); font-weight: 700; }
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none; }
+/* 左の列はツリーとその下の表、右の列は選択中のマスとステータスの要約。右の列が長くても、下の表はツリーのすぐ下から始める */
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; grid-template-rows: auto 1fr; grid-template-areas: "stage side" "below side"; gap: 14px; }
+.stage { grid-area: stage; }
+.side { grid-area: side; align-self: start; display: grid; gap: 14px; min-width: 0; }
+.below { grid-area: below; align-self: start; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; align-items: start; min-width: 0; }
+.below .wide { grid-column: 1 / -1; }
+.stack { display: grid; gap: 14px; align-content: start; min-width: 0; }
+.scroll { overflow-x: auto; }
+@media (max-width: 960px) { .main { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; grid-template-areas: "stage" "side" "below"; } }
+@media (max-width: 720px) { .below { grid-template-columns: minmax(0, 1fr); } }
+
+/* ステータスptの効果 */
+.spfx { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; }
+.spc { border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 8px; padding: 10px 12px; display: grid; gap: 6px; align-content: start; scroll-margin-top: 12px; }
+.spc:target { box-shadow: 0 0 0 2px var(--c); }
+.spc header { display: flex; align-items: baseline; gap: 8px; }
+.spc h3 { font-family: var(--f-display); font-size: 15px; margin: 0; }
+.spc header .v { margin-left: auto; font-size: 20px; font-weight: 600; }
+.spc table td, .spc table th { padding: 4px 2px; }
+.spc td.l { white-space: normal; }
+.spc .how { display: block; font-size: 11.5px; color: var(--muted); }
+.spc .how .off { color: var(--bad); }
+.jobbase th, .jobbase td { text-align: center; } .jobbase .l { text-align: left; }
+.jobbase .tier { display: block; font-size: 10.5px; font-weight: 700; }
+.jobbase td.high { color: var(--accent-ink); font-weight: 700; } .jobbase td.low { color: var(--bad); }
+.jobbase tr.cur td { background: var(--soft); } .jobbase tr.cur td.l { font-weight: 700; }
+.spc td.up { font-weight: 400; }
+a.pt { color: inherit; text-decoration: none; }
+a.pt:hover, a.pt:focus-visible { outline: 2px solid var(--c); outline-offset: 1px; }
+
+/* ツリー */
+.stage { position: relative; background: var(--canvas); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; height: min(74vh, 760px); min-height: 380px; touch-action: none; }
+.stage canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+.stage canvas.dragging { cursor: grabbing; }
+.zoom { position: absolute; right: 10px; top: 10px; display: grid; gap: 6px; }
+.zoom button { width: 36px; height: 36px; padding: 0; font-size: 18px; background: var(--panel); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.zoom button.txt { width: auto; font-size: 12px; padding: 0 9px; }
+.hint { position: absolute; left: 10px; bottom: 10px; right: 60px; display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 12px; color: var(--muted); pointer-events: none; }
+.hint span { background: var(--panel); opacity: .92; padding: 1px 8px; border-radius: 4px; }
+.hint i { display: inline-block; width: 10px; height: 10px; margin-right: 4px; vertical-align: -1px; border-radius: 50%; }
+.tip { position: absolute; z-index: 3; pointer-events: none; max-width: 280px; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 11px; box-shadow: 0 6px 20px rgba(0,0,0,.18); font-size: 13px; line-height: 1.5; display: grid; gap: 2px; }
+.tip b { font-family: var(--f-display); font-size: 14px; }
+
+/* カード */
+.card h2 { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.badge { font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; color: var(--panel); white-space: nowrap; font-family: var(--f-body); }
+.b-small { background: var(--muted); } .b-notable { background: var(--notable); } .b-keystone { background: var(--keystone); } .b-start { background: var(--start); } .b-blocked { background: var(--blocked); }
+.state { font-size: 12.5px; font-weight: 700; }
+.state.own { color: var(--accent-ink); } .state.can { color: var(--path); } .state.far { color: var(--muted); } .state.no { color: var(--bad); }
+.effs { display: flex; flex-wrap: wrap; gap: 6px; }
+.eff { background: var(--soft); border-radius: 6px; padding: 3px 9px; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; }
+.eff.neg { color: var(--bad); }
+.acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.acts:empty { display: none; }
+.msg { font-size: 13px; }
+.msg:empty { display: none; }
+.msg.ok { color: var(--accent-ink); } .msg.err { color: var(--bad); }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; font-size: 13px; margin: 0; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.pts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.pt { border-radius: 6px; padding: 6px 7px; background: var(--soft); border-top: 3px solid var(--c); display: grid; min-width: 0; }
+.pt b { font-family: var(--f-mono); font-size: 17px; }
+.pt span { font-size: 11px; color: var(--muted); overflow-wrap: anywhere; }
+.meter { height: 8px; border-radius: 4px; background: var(--soft); overflow: hidden; }
+.meter i { display: block; height: 100%; background: var(--accent); }
+.meter.over i { background: var(--bad); }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; }
+td.l, th.l { text-align: left; white-space: normal; }
+td.up { color: var(--accent-ink); font-weight: 700; } td.down { color: var(--bad); }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chips span { font-size: 12px; background: var(--soft); border-radius: 999px; padding: 1px 9px; }
+.chips span.k { background: var(--keystone); color: var(--panel); }
+.klist { display: grid; gap: 4px; max-height: 320px; overflow: auto; }
+.krow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px; align-items: center; padding: 6px 8px; border-radius: 6px; background: var(--soft); text-align: left; border: 1px solid transparent; }
+.krow:hover { border-color: var(--keystone); }
+.krow b { font-size: 13px; } .krow span { font-size: 11.5px; color: var(--muted); }
+.krow.own { background: var(--accent-soft); }
+#totals table td:first-child { text-align: left; white-space: normal; }
+#totals td.sum { font-weight: 700; }
+#totals td.zero, #detail td.zero { color: var(--muted); }
+#detail table td:first-child { text-align: left; white-space: normal; }
+#detail td.tree { color: var(--accent-ink); font-weight: 700; }
+#detail td.tree.neg { color: var(--bad); }
+#detail td.sum { font-weight: 700; }
+#detail tr.sec td { background: var(--soft); font-size: 12px; color: var(--muted); font-weight: 700; text-align: left; }
+#totals .neg { color: var(--bad); }
+details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+details ul { margin: 8px 0 0; padding-left: 1.2em; display: grid; gap: 4px; font-size: 13px; }
+
+/* ADMIN */
+button[aria-pressed="true"].admin-btn { background: var(--keystone); border-color: var(--keystone); color: var(--panel); font-weight: 700; }
+.admin { border: 2px solid var(--keystone); }
+.admin h2 { color: var(--keystone); }
+.admin .row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.admin .row > label { font-size: 12.5px; color: var(--muted); display: flex; gap: 6px; align-items: center; }
+.admin input[type=text] { width: min(240px, 100%); }
+.admin input.val { width: 6em; font-family: var(--f-mono); }
+.admin .effed { display: grid; gap: 6px; }
+.admin .gates { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: center; font-size: 13px; }
+.admin textarea { width: 100%; min-height: 140px; font-family: var(--f-mono); font-size: 11.5px; background: var(--bg); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; box-sizing: border-box; }
+.admin hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
+.admin .list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow: auto; }
+.admin .list button { font-size: 12px; padding: 1px 7px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header style="display:grid;gap:6px">
+    <h1>Asgard スキルツリー体験</h1>
+    <p class="muted">14×14区画・70×70マスのツリーを、サーバーと同じデータとルールで試せます。マスにカーソルを合わせると、今のツリーからそこまでの最短ルートと必要ポイントが光ります。マスを選ぶと、右のカードから習得できます。ダブルクリックでそのまま取得、右クリックで解除もできます。「効果を検索」に文字を入れると、名前や効果にその文字を含むマスが光ります。</p>
+  </header>
+
+  <div class="panel">
+    <div class="bar">
+      <label class="field" for="fam">職業系統 <select id="fam"></select></label>
+      <label class="field" for="lv">レベル <input type="range" id="lv" min="1" max="270" value="150"><input type="number" id="lvN" min="1" max="270" value="150" aria-label="レベルの数値"></label>
+      <label class="field" for="lvMax">上限Lv <input type="number" id="lvMax" min="10" max="999" value="270"></label>
+      <div class="field"><span>小ノードで上げる</span><div class="seg" id="statSeg" role="group" aria-label="小ノードで上げるステータス"></div></div>
+    </div>
+    <div class="bar">
+      <label class="field" for="route">ビルド例・プリセット <select id="route"></select></label>
+      <span class="small muted" id="routeLv"></span>
+      <button type="button" id="takeRoute">このビルドで取り直す</button>
+      <button type="button" id="delPreset" hidden>このプリセットを削除</button>
+      <span style="flex:1"></span>
+      <button type="button" id="undo" disabled>元に戻す</button>
+      <button type="button" id="resetAll">全部リセット</button>
+      <button type="button" id="adminBtn" class="admin-btn" aria-pressed="false" hidden>ADMINモード</button>
+    </div>
+    <div class="bar">
+      <label class="field" for="q">効果を検索 <input type="search" id="q" placeholder="例：物理ダメージ　クリ倍率　秘宝" autocomplete="off" aria-describedby="qInfo"></label>
+      <button type="button" id="qNext" disabled>近い順に移動</button>
+      <span class="small muted" id="qInfo">名前や効果に入力した文字を含むマスが光ります。スペースで区切ると、すべてを含むマスだけが光ります</span>
+    </div>
+    <div class="bar">
+      <label class="field" for="buildName">ビルド名 <input type="text" id="buildName" maxlength="40" placeholder="例：Knight 火力重視"></label>
+      <button type="button" id="saveBuild" class="primary">ファイルに保存</button>
+      <button type="button" id="addPreset">共有ファイルを追加</button>
+      <input type="file" id="presetFile" accept=".json,application/json" multiple hidden>
+      <span class="small muted">保存したファイルを渡すと、相手は「共有ファイルを追加」かページへのドロップで、プリセットとして選べます</span>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="stage" id="stage">
+      <canvas id="tree" tabindex="0" aria-label="スキルツリー。ドラッグで移動、ホイールで拡大縮小、クリックでマスを選択、ダブルクリックで取得、右クリックで解除"></canvas>
+      <div class="zoom">
+        <button type="button" id="zIn" aria-label="拡大">＋</button>
+        <button type="button" id="zOut" aria-label="縮小">－</button>
+        <button type="button" class="txt" id="zHome">起点へ</button>
+        <button type="button" class="txt" id="zAll">全体</button>
+      </div>
+      <div class="hint">
+        <span><i style="background:var(--accent)"></i>習得済み</span>
+        <span><i style="background:var(--path)"></i>ルート</span>
+        <span><i style="background:var(--hit)"></i>検索で見つかったマス</span>
+        <span><i style="background:var(--notable)"></i>中ノード</span>
+        <span><i style="background:var(--keystone)"></i>大ノード</span>
+        <span><i style="background:var(--start)"></i>秘宝</span>
+        <span>太線＝門　▶＝一方通行</span>
+      </div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+
+    <div class="side">
+      <div class="panel admin" id="admin" hidden></div>
+      <div class="panel card" id="card"></div>
+
+      <div class="panel">
+        <div class="bar" style="justify-content:space-between">
+          <h2 id="jobName"></h2>
+          <span class="num"><b id="spent"></b> / <span id="allPts"></span> pt</span>
+        </div>
+        <div class="meter" id="meter"><i></i></div>
+        <div class="small muted" id="ptNote"></div>
+        <div class="pts" id="pts"></div>
+        <table id="statTbl"></table>
+        <div class="chips" id="nodeChips"></div>
+      </div>
+
+      <div class="panel">
+        <div class="bar" style="justify-content:space-between"><h2>大ノード一覧</h2><span class="small muted">近い順・押すとその場所へ</span></div>
+        <div class="klist" id="klist"></div>
+      </div>
+    </div>
+
+    <div class="below">
+      <div class="panel wide" id="ptfxPanel">
+        <div class="bar" style="justify-content:space-between"><h2>ステータスptの効果</h2><span class="small muted">何にどれだけ換算されるか</span></div>
+        <p class="small muted">ステータスptは職業基礎とツリーの合計で、装備の要求判定にも使います。「+10ptで」は、あと10pt上げたときの伸びです。</p>
+        <div class="spfx" id="ptfx"></div>
+      </div>
+
+      <div class="panel">
+        <div class="bar" style="justify-content:space-between"><h2>ステータスの内訳</h2><span class="small muted">どこから何だけ増えたか</span></div>
+        <div id="detail" class="scroll"></div>
+        <p class="small muted">装備は平均的な装備を想定しています。Lv270を超える分は、Lv270の装備で計算します。</p>
+      </div>
+
+      <div class="stack">
+        <div class="panel">
+          <div class="bar" style="justify-content:space-between"><h2>職業ごとの基礎ステータス</h2><span class="small muted num" id="jobBaseLv"></span></div>
+          <div class="scroll"><table id="jobBase" class="jobbase"></table></div>
+          <p class="small muted" id="jobBaseRule"></p>
+        </div>
+
+        <div class="panel">
+          <div class="bar" style="justify-content:space-between"><h2>取ったノードの効果合計</h2><span class="small muted">ステータスごと</span></div>
+          <div id="totals" class="scroll"></div>
+        </div>
+
+        <details class="panel">
+          <summary>ルール</summary>
+          <ul>
+            <li>使えるポイントはレベルと同じ数。小ノード1・中ノード2・大ノード3。</li>
+            <li>習得できるのは、習得済みのマスから<b>こちら向きに進める</b>マスだけ。区画は5×5マスで、境目は太線の門からしか越えられない。矢印の門は一方通行。</li>
+            <li>中に矢印があるマスは、その向きにしか進めない。</li>
+            <li>中心から30マス以上の外周には、効果が1.6倍の強化版中ノードがあり、名前に「・極」が付く。外周の端寄りには、各職業1つずつ金色の大ノード「秘宝」が正五角形に並んでいる。秘宝は大ノード約3個分の効果で、どの職業も自分の秘宝までは33〜37pt、両隣の職業の秘宝までは52〜56ptで届く。</li>
+            <li>各職業のエリアには、その職業が苦手な効果を秘宝と同じくらい持つ大ノードが1つずつある。SwordMan系は投射ダメージ、Knight系は魔法ダメージ、Thief系は防御力割合、Mage系は攻撃速度、Archer系は物理ダメージ。辺境には、近くの職業の苦手と得意を半分ずつ持つ「辺境の〇〇」が1つずつある。</li>
+            <li>世界樹の加護は装備可能レア度+1の大ノードで、中心から20マスの円に12個、30マスの円に8個が等間隔に並んでいる。</li>
+            <li>途中のマスは、外側のマスを先に解除しないと解除できない。1マスの解除には、今のレベル×100ケルが必要。</li>
+            <li>レベルを下げて使用ポイントがレベルを超えると、ツリーの効果はすべて無効。</li>
+            <li>ステータスは FuncPlayerStatus が想定する平均的な装備にツリーを足した値。習得状態はこのブラウザにだけ保存されます。人に渡すときは「ファイルに保存」を使います。</li>
+          </ul>
+        </details>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="sim-data.js"></script>
+<script>
+(() => {
+  const S = window.SIM; if (!S) return;
+  const $ = s => document.querySelector(s);
+  const M = S.macro, R = S.rows, C = S.cols, N = M * R;
+  const SMALL = 1, COST = { small: 1, notable: 2, keystone: 3 };
+  // 1マスの解除費用 = 今のレベル × RESET_PER_LV ケル（SkillTree.sk の stSingleResetCostPerLevel と同じ）
+  const RESET_PER_LV = 100;
+  // ステータスpt1あたりの効果量の倍率（改訂27。値は sim-data.mjs が design 側から渡す）。小ノードはptを足すだけで上乗せしない（改訂28）
+  const STAT_RATE = S.statRate ?? 1;
+  const STAT_KEYS = ['AD', 'DF', 'MD', 'AS', 'MS'];
+  const CODE = { AD: 1, DF: 2, MD: 3, AS: 4, MS: 5 }, CODE_KEY = { 1: 'AD', 2: 'DF', 3: 'MD', 4: 'AS', 5: 'MS' };
+  const STAT_JA = { AD: '攻撃力', DF: '防御力', MD: '魔法力', AS: '攻撃速度', MS: '移動速度' };
+  const STAT_VAR = { AD: '--st-ad', DF: '--st-df', MD: '--st-md', AS: '--st-as', MS: '--st-ms' };
+  const TYPE_JA = { small: '小ノード', notable: '中ノード', keystone: '大ノード', start: '起点', blocked: '進入不可' };
+  const LABEL = { StatsAD: '攻撃力', StatsDF: '防御力', StatsAS: '攻撃速度', StatsMD: '魔法力', StatsMS: '移動速度', TreeStatsAD: '攻撃力・計算分', TreeStatsDF: '防御力・計算分', TreeStatsAS: '攻撃速度・計算分', TreeStatsMD: '魔法力・計算分', TreeStatsMS: '移動速度・計算分', PDamage: '物理ダメージ%', PMD: '魔法ダメージ%', PDefense: '防御力%', CC: 'クリ率', CS: 'クリ倍率', MCC: 'スキルクリ率', MCS: 'スキルクリ倍率', BaseAS: '特別AS', AS: '攻撃速度倍率', Defense: '防御率', MR: '魔法変換率', MS: '魔法変換倍率', Speed: '移動速度の実値', CD: 'CD短縮%', AddHP: 'HP', AD: '投射ダメージ%', Rare: '装備可能レア度', AddExp: '獲得経験値', AddMoney: '獲得金額', Fire: '火属性', Water: '水属性', Light: '雷属性', Wind: '風属性', Dark: '暗黒属性', Divine: '神聖属性' };
+  const LABEL_FULL = { PDamage: '物理ダメージ割合', PMD: '魔法ダメージ割合', PDefense: '防御力割合', CC: 'クリティカル率', CS: 'クリティカル倍率', MCC: 'スキルクリティカル率', MCS: 'スキルクリティカル倍率', BaseAS: '基礎攻撃速度', CD: 'クールダウン減少', AddHP: '増加HP', AD: '投射ダメージ割合' };
+  const VKEY = { PDamage: 'pdmg', PMD: 'pmd', PDefense: 'pdef', AD: 'ad', CC: 'cc', CS: 'cs', MCC: 'mcc', MCS: 'mcs', MR: 'mr', MS: 'ms', CD: 'cd', AddHP: 'addhp', BaseAS: 'bas', AS: 'asMul', Speed: 'spd', Defense: 'def' };
+  const OPP = { N: 'S', S: 'N', E: 'W', W: 'E' }, ARROW = { N: '↑', E: '→', S: '↓', W: '←' };
+  const esc = t => String(t).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+  const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+  // ================= データ（ファイルの値＋ADMINの上書き）
+  const NODE = new Map(S.nodes.map(f => [f[0], f]));
+  const GATE = new Set(S.gates);
+  const OV = new Map(), OVG = new Map();
+  const hasGate = k => (OVG.has(k) ? OVG.get(k) : GATE.has(k));
+  const SYN_NAME = '職業の心得', SYN_DESC = '取得時に選択中のステータスへ+1';
+  const START = Object.fromEntries(S.starts.map(f => [+f[0], f[3]]));
+  const parse = id => { const m = /^M(\d+)x(\d+)_R(\d+)C(\d+)$/.exec(id); return m ? m.slice(1).map(Number) : null; };
+  const mk = (mr, mc, r, c) => `M${mr}x${mc}_R${r}C${c}`;
+  const idAt = (gr, gc) => mk(Math.ceil(gr / R), Math.ceil(gc / C), (gr - 1) % R + 1, (gc - 1) % C + 1);
+  const gpos = id => { const [mr, mc, r, c] = parse(id); return [(mr - 1) * R + r, (mc - 1) * C + c]; };
+  const macroOf = id => id.split('_R')[0];
+  function baseNode(id) {
+    if (NODE.has(id)) return NODE.get(id);
+    const p = parse(id); if (!p) return null;
+    const [mr, mc, r, c] = p;
+    if (mr < 1 || mc < 1 || mr > M || mc > M || r < 1 || c < 1 || r > R || c > C) return null;
+    return [id, mr, mc, r, c, 'small', '-', '-', SYN_NAME, SYN_DESC];
+  }
+  function getNode(id) {
+    const b = baseNode(id); if (!b || !OV.has(id)) return b;
+    const d = OV.get(id), f = [id, b[1], b[2], b[3], b[4], d.type, d.effect || '-', '-', d.name || SYN_NAME, d.desc || SYN_DESC];
+    if (d.exits !== null && d.exits !== undefined) f[10] = d.exits;
+    return f;
+  }
+  function neighbor(id, d) {
+    let [mr, mc, r, c] = parse(id);
+    if (d === 'N') r--; else if (d === 'S') r++; else if (d === 'W') c--; else c++;
+    if (r < 1) { r = R; mr--; } else if (r > R) { r = 1; mr++; }
+    if (c < 1) { c = C; mc--; } else if (c > C) { c = 1; mc++; }
+    if (mr < 1 || mc < 1 || mr > M || mc > M) return '';
+    return mk(mr, mc, r, c);
+  }
+  function exits(id) { const f = getNode(id); if (f && f[10] !== undefined) return f[10] === '-' ? '' : f[10]; return 'NESW'; }
+  function canPass(from, to, d) { if (macroOf(from) !== macroOf(to)) return hasGate(from + '_' + d); return exits(from).includes(d); }
+  const exitArrows = id => [...'NESW'].filter(d => { const n = neighbor(id, d); return n && canPass(id, n, d); }).map(d => ARROW[d]).join('');
+  const enterable = id => { const t = getNode(id)[5]; return t !== 'blocked' && t !== 'start'; };
+  const effList = e => (e === '-' ? [] : e.split(';').map(kv => { const [k, v] = kv.split(':'); return [k, +v]; }));
+  const effText = ([k, v]) => `${LABEL[k] || k} ${v > 0 ? '+' : ''}${v}`;
+  // マスの表示用。換算専用pt TreeStats* は出さず、上がるステータスptだけを見せる
+  const shownEff = e => effList(e).filter(([k]) => !k.startsWith('TreeStats'));
+
+  // ================= 状態（習得はこのブラウザに保存）
+  // 上限レベルの初期値は sim-data から受け取る。ページで変えた値はこのブラウザに残る
+  const LV_CAP = S.maxLevel || 270;
+  let st = { fam: 2, lv: 150, maxLv: LV_CAP, trees: {}, kel: 0, route: -1 };
+  let firstVisit = true;
+  try { const s = JSON.parse(window.localStorage.getItem('asgardTreeSim2') || 'null'); if (s && s.trees) { st = Object.assign(st, s); firstVisit = false; } } catch (e) {}
+  const save = () => { try { window.localStorage.setItem('asgardTreeSim2', JSON.stringify(st)); } catch (e) {} };
+  // プリセット：保存・追加したビルドはこのブラウザに、サーバーの presets フォルダのビルドは読み込むたびに取りに行く。
+  // st.route はおすすめルートなら番号、プリセットなら 'p:' で始まるID
+  const PRESET_KEY = 'asgardTreePresets', BUILD_FORMAT = 'asgard-skilltree-build';
+  const presets = { local: [], folder: [] };
+  try { const a = JSON.parse(window.localStorage.getItem(PRESET_KEY) || '[]'); if (Array.isArray(a)) presets.local = a; } catch (e) {}
+  const savePresets = () => { try { window.localStorage.setItem(PRESET_KEY, JSON.stringify(presets.local)); } catch (e) {} };
+  const presetById = id => presets.local.find(p => p.id === id) || presets.folder.find(p => p.id === id) || null;
+  // おすすめルートはレベルごとに1本ずつある（S.routeLevels）。今のレベル以上で一番近いレベルのルートを使い、上限を超えたら一番高いレベルのルート。
+  // ルートの文字列は1マス4文字：マスの番号（(行-1)*70+(列-1) の36進3桁）＋小ノードで上げるステータス（a d m s v、ほかは -）
+  const ROUTE_LV = S.routeLevels || [270];
+  const ST_CH = { a: 'AD', d: 'DF', m: 'MD', s: 'AS', v: 'MS' };
+  const routeLvIndex = L => { const i = ROUTE_LV.findIndex(x => x >= L); return i < 0 ? ROUTE_LV.length - 1 : i; };
+  const routeCache = new Map();
+  function routeCells(i, li) {
+    const key = i + ':' + li; if (routeCache.has(key)) return routeCache.get(key);
+    const str = S.routes[i].byLv[li] || '', out = [];
+    for (let j = 0; j + 4 <= str.length; j += 4) { const n = parseInt(str.slice(j, j + 3), 36); out.push([idAt(Math.floor(n / N) + 1, n % N + 1), ST_CH[str[j + 3]] || '']); }
+    routeCache.set(key, out); return out;
+  }
+  function curRoute() {
+    if (typeof st.route === 'string') return presetById(st.route);
+    const r = st.route >= 0 ? S.routes[st.route] : null; if (!r) return null;
+    const li = routeLvIndex(st.lv);
+    return { ...r, lvFor: ROUTE_LV[li], cells: routeCells(st.route, li) };
+  }
+  const tree = () => (st.trees[st.fam] ||= { u: {}, sel: null });
+  const fam = () => S.families[st.fam - 1];
+  const isU = id => tree().u[id] !== undefined;
+  const selStat = () => tree().sel || fam().pref;
+  const ensureStart = () => { const s = START[st.fam]; if (!isU(s)) tree().u[s] = 0; };
+  const spent = () => Object.keys(tree().u).reduce((a, id) => a + (COST[getNode(id)[5]] || 0), 0);
+  const avail = () => st.lv - spent();
+  const count = () => Object.keys(tree().u).length;
+  const resetCost = () => st.lv * RESET_PER_LV;
+  const undoStack = [];
+  const snapshot = () => { undoStack.push({ fam: st.fam, u: { ...tree().u }, kel: st.kel }); if (undoStack.length > 60) undoStack.shift(); };
+
+  function canUnlock(id) {
+    const f = getNode(id); if (!f || isU(id) || !enterable(id)) return false;
+    return [...'NESW'].some(d => { const n = neighbor(id, d); return n && isU(n) && canPass(n, id, OPP[d]); });
+  }
+  function wouldOrphan(id) {
+    const ok = new Set([START[st.fam]]), ids = Object.keys(tree().u).filter(x => x !== id);
+    let changed = true;
+    while (changed) { changed = false; for (const x of ids) { if (ok.has(x)) continue; for (const d of 'NESW') { const n = neighbor(x, d); if (n && ok.has(n) && canPass(n, x, OPP[d])) { ok.add(x); changed = true; break; } } } }
+    return ids.some(x => !ok.has(x));
+  }
+  // 習得済みの集合から全マスへの最短コスト（通るマスのコストの合計）。状態が変わるたびに1回だけ計算する
+  let reach = null;
+  // 効果の検索で見つかったマスの集合。検索欄が空なら null
+  let hits = null;
+  function computeReach() {
+    const dist = new Map(), prev = new Map(), heap = [];
+    const push = (d, id) => { heap.push([d, id]); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+    const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const l = 2 * i + 1, r = l + 1; let m = i; if (l < heap.length && heap[l][0] < heap[m][0]) m = l; if (r < heap.length && heap[r][0] < heap[m][0]) m = r; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+    for (const id of Object.keys(tree().u)) { dist.set(id, 0); push(0, id); }
+    while (heap.length) {
+      const [d, id] = pop(); if (d > dist.get(id)) continue;
+      for (const dir of 'NESW') {
+        const n = neighbor(id, dir); if (!n || isU(n) || !enterable(n) || !canPass(id, n, dir)) continue;
+        const nd = d + COST[getNode(n)[5]];
+        if (!dist.has(n) || nd < dist.get(n)) { dist.set(n, nd); prev.set(n, id); push(nd, n); }
+      }
+    }
+    reach = { dist, prev };
+  }
+  const pathTo = id => { if (!reach || !reach.dist.has(id) || isU(id)) return null; const p = []; for (let x = id; !isU(x); x = reach.prev.get(x)) p.push(x); return p.reverse(); };
+  const pathCost = p => p.reduce((a, x) => a + COST[getNode(x)[5]], 0);
+
+  // ================= 操作
+  let msg = { t: '', cls: '' };
+  const say = (t, cls = '') => { msg = { t, cls }; };
+  function take(id) { const f = getNode(id); tree().u[id] = f[5] === 'small' && f[6] === '-' ? CODE[selStat()] : 0; }
+  function doUnlock(id) {
+    if (!canUnlock(id)) { say('このマスはまだ取れません。習得済みのマスから、こちら向きに進める必要があります。', 'err'); return; }
+    const f = getNode(id);
+    if (avail() < COST[f[5]]) { say(`ポイントが足りません。必要 ${COST[f[5]]}pt、残り ${avail()}pt です。`, 'err'); return; }
+    snapshot(); take(id); say(`「${f[8]}」を習得しました。`, 'ok'); changed();
+  }
+  function doPath(id) {
+    const p = pathTo(id); if (!p) { say('壁や一方通行があるため、今のツリーからは届きません。', 'err'); return; }
+    const total = pathCost(p);
+    if (total > avail()) { say(`ポイントが足りません。ここまで ${total}pt、残り ${avail()}pt です。`, 'err'); return; }
+    snapshot(); p.forEach(take); say(`${p.length}マス・${total}ptを取って「${getNode(id)[8]}」まで進みました。`, 'ok'); changed();
+  }
+  function doReset(id) {
+    const f = getNode(id);
+    if (!isU(id)) return;
+    if (f[5] === 'start') { say('起点は解除できません。', 'err'); return; }
+    if (wouldOrphan(id)) { say('このマスの先に習得済みのマスがあるため解除できません。外側のマスから解除してください。', 'err'); return; }
+    snapshot(); const cost = resetCost(); st.kel += cost; delete tree().u[id];
+    say(`「${f[8]}」を解除しました。${cost.toLocaleString('ja-JP')}ケルを使いました。`, 'ok'); changed();
+  }
+
+  // ================= ステータス計算（①の build-v2.mjs を移植）
+  const JOB_TIER = { 1: { DF: 'high', MS: 'low' }, 2: { AD: 'high', MD: 'low' }, 3: { AS: 'high', DF: 'low' }, 4: { MD: 'high', AS: 'low' }, 5: { MS: 'high', AD: 'low' } };
+  // 職業基礎ステータス = 基準値 + Lv × 成長率。値は sim-data.mjs が build-v2.mjs から渡す
+  const JOB_BASE = S.jobBase || { high: [10, 1], normal: [5, 0.5], low: [2, 0.2] };
+  const jobBase = (f, k, L) => { const [b, g] = JOB_BASE[JOB_TIER[f][k] || 'normal']; return b + g * L; };
+  const tierOf = L => (L >= 250 ? 3 : L >= 150 ? 2 : L >= 50 ? 1 : 0);
+  function equipAt(L) {
+    const ls = S.levels; let i = ls.findIndex(x => x >= L); if (i < 0) i = ls.length - 1;
+    if (ls[i] === L || i === 0) return { ...S.E[i] };
+    const a = S.E[i - 1], b = S.E[i], t = (L - ls[i - 1]) / (ls[i] - ls[i - 1]);
+    const o = {}; for (const k in a) o[k] = a[k] * (1 - t) + b[k] * t; return o;
+  }
+  function finalStats(L, f, pts, E) {
+    const s = { ...E }; s.mcs += 0.5; s.ms += 1; s.atk += 1; s.bas += 1; s.spd += 0.1;
+    const { AD, DF, MD, AS, MS } = pts, fa = f.f, R = STAT_RATE; // pts は換算pt＝ステータスpt＋換算専用pt
+    if (AD > 0) { s.pdmg += AD * 0.2 * R; if (fa === 2 || AD >= Math.floor(L / 3)) { s.cs += AD * 0.005 * R; s.mcs += AD * 0.0025 * R; } }
+    if (MD > 0) { s.pmd += MD * 0.2 * R; s.mr += MD * 0.2 * R; s.ms += MD * 0.002 * R; s.mcc += 50 * R * (1 - Math.exp(-MD / 200)); }
+    if (DF > 0) { s.pdef += DF * 0.2 * R; if (fa === 1 || DF >= Math.floor(L / 3)) s.addhp += DF * 0.1 * R; }
+    if (AS > 0) { s.bas += 2 * R * (1 - Math.exp(-AS / 400)); const c = 50 * R * (1 - Math.exp(-AS / 400)); s.cc += c; s.mcc += c / 2; }
+    if (MS > 0) { s.spd += 0.2 * R * (1 - Math.exp(-MS / 400)); s.cd += 30 * R * (1 - Math.exp(-MS / 300)); }
+    const [hb, hr] = f.hp[tierOf(L)];
+    const hp = hb + L * hr + s.addhp + s.nbtHp, defRate = s.def * (100 + s.pdef) / 100;
+    if (fa === 1) { const up = 25 * Math.log((defRate + hp * 1.5) / 100 + 1); s.pdmg += up; s.pmd += up; }
+    const asMul = s.asMul || 1, aspd = (s.bas + s.nbtAs) * asMul, dmg = (s.dmg1 + s.dmg2) / 2;
+    const ccEff = clamp(Math.floor(s.cc * 2), 0, 100) / 100, mr = clamp(s.mr, 0, 100), cdm = 1 / (1 - clamp(s.cd, 0, 80) / 100);
+    const mcrit = 1 + clamp(s.mcc, 0, 100) / 100 * (s.mcs - 1);
+    return { hp, def: defRate, defRaw: s.def, pdef: s.pdef, ehp: hp * (7 + defRate) / 7, pdmg: s.pdmg, pmd: s.pmd, ad: s.ad, cc: s.cc, cs: s.cs, mcc: s.mcc, mcs: s.mcs, cd: s.cd, mr: s.mr, mmul: 0.2 * s.ms, atk: s.atk, dmg, speed: s.spd + s.nbtSpd, aspd,
+      phys: (s.atk + dmg * (1 - mr / 100)) * (1 + s.pdmg / 100) * (1 + ccEff * (s.cs - 1)) * aspd,
+      physSkill: (s.atk + dmg * (1 - mr / 100)) * (1 + s.pdmg / 100) * mcrit * cdm,
+      magic: dmg * mr / 100 * 0.2 * s.ms * (1 + s.pmd / 100) * mcrit * cdm,
+      proj: (s.atk + dmg * (1 - mr / 100)) * (1 + (s.pdmg + s.ad) / 100) * (1 + ccEff * (s.cs - 1)) * cdm };
+  }
+  // pts = ステータスpt（要求ステータスの判定に使う）、calc = 換算に使う値（ステータスpt＋換算専用pt）
+  function treeEffects() {
+    const pts = {}, calc = {}, V = {}, other = [];
+    for (const [id, code] of Object.entries(tree().u)) {
+      if (code >= 1) { const k = CODE_KEY[code]; pts[k] = (pts[k] || 0) + SMALL; calc[k] = (calc[k] || 0) + SMALL; continue; }
+      for (const [k, x] of effList(getNode(id)[6])) {
+        if (k.startsWith('Stats')) { const s = k.slice(5); pts[s] = (pts[s] || 0) + x; calc[s] = (calc[s] || 0) + x; }
+        else if (k.startsWith('TreeStats')) { const s = k.slice(9); calc[s] = (calc[s] || 0) + x; }
+        else if (VKEY[k]) V[VKEY[k]] = (V[VKEY[k]] || 0) + x;
+        else other.push([k, x]);
+      }
+    }
+    return { pts, calc, V, other };
+  }
+
+  // ================= ツリーの描画（Canvas、拡大縮小・ドラッグ）
+  const stage = $('#stage'), cv = $('#tree'), ctx = cv.getContext('2d'), tip = $('#tip');
+  let view = { s: 40, x: 0, y: 0 }; // s = 1マスのピクセル数、x/y = 画面左上のワールド座標（マス単位）
+  let hover = null, selected = null, W = 800, H = 600;
+  const colors = {};
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  function readColors() { for (const k of ['canvas', 'link', 'wall', 'accent', 'path', 'hit', 'gate', 'notable', 'keystone', 'start', 'blocked', 'fg', 'muted', 'panel', 'bad', 'st-ad', 'st-df', 'st-md', 'st-as', 'st-ms', 't-df', 't-ad', 't-as', 't-md', 't-ms', 't-mix', 't-center', 't-frontier', 't-shrine']) colors[k] = css('--' + k); }
+  const TH = t => ({ DF: 't-df', AD: 't-ad', AS: 't-as', MD: 't-md', MS: 't-ms', CENTER: 't-center', FRONTIER: 't-frontier', SHRINE: 't-shrine' }[t] || 't-mix');
+  const TREASURE = new Set(['金剛不壊', '覇王の一撃', '神速', '大魔導の書', '天弓']);
+  const THEME_NAME = { DF: '鉄壁', AD: '破城', AS: '烈風', MD: '魔道', MS: '弧月', 'DF/AD': '剛健', 'AD/AS': '必殺', 'AS/MD': '術技', 'MD/MS': '魔弾', 'MS/DF': '機動', CENTER: '聖域', FRONTIER: '辺境', SHRINE: '世界樹の祠' };
+  function size() { const r = stage.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1); cv.width = Math.max(1, Math.round(r.width * dpr)); cv.height = Math.max(1, Math.round(r.height * dpr)); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); return r; }
+  function centerOn(gr, gc, s) { if (s) view.s = s; view.x = gc - 0.5 - W / view.s / 2; view.y = gr - 0.5 - H / view.s / 2; }
+  const toScreen = (gr, gc) => [(gc - 0.5 - view.x) * view.s, (gr - 0.5 - view.y) * view.s];
+  const toCell = (px, py) => { const gc = Math.floor(px / view.s + view.x) + 1, gr = Math.floor(py / view.s + view.y) + 1; return gr >= 1 && gc >= 1 && gr <= N && gc <= N ? idAt(gr, gc) : null; };
+  let raf = 0; const draw = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; paint(); }); };
+  function arrowHead(x, y, ang, k, color) { ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(k, 0); ctx.lineTo(-k * .8, -k * .8); ctx.lineTo(-k * .8, k * .8); ctx.closePath(); ctx.fill(); ctx.restore(); }
+  function paint() {
+    const s = view.s;
+    ctx.fillStyle = colors.canvas; ctx.fillRect(0, 0, W, H);
+    const c0 = clamp(Math.floor(view.x), 0, N - 1) + 1, c1 = clamp(Math.ceil(view.x + W / s), 1, N);
+    const r0 = clamp(Math.floor(view.y), 0, N - 1) + 1, r1 = clamp(Math.ceil(view.y + H / s), 1, N);
+    // 区画の背景とテーマ名
+    for (let mr = Math.ceil(r0 / R); mr <= Math.ceil(r1 / R); mr++) for (let mc = Math.ceil(c0 / C); mc <= Math.ceil(c1 / C); mc++) {
+      const th = S.themeGrid[(mr - 1) * M + (mc - 1)], x = ((mc - 1) * C - view.x) * s, y = ((mr - 1) * R - view.y) * s;
+      ctx.fillStyle = colors[TH(th)]; ctx.fillRect(x + 1, y + 1, C * s - 2, R * s - 2);
+      if (s < 18 && s >= 7) { ctx.fillStyle = colors.muted; ctx.globalAlpha = .55; ctx.font = `700 ${Math.max(9, s * 1.1)}px "Zen Maru Gothic", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(THEME_NAME[th] || '', x + C * s / 2, y + R * s / 2); ctx.globalAlpha = 1; }
+    }
+    const focus = hover || selected, fpath = focus ? pathTo(focus) : null, pathSet = new Set(fpath || []);
+    const rt = curRoute(), route = rt ? new Set(rt.cells.map(x => x[0])) : null;
+    // つながり（通れる向きにだけ線を引く。区画の境目は門だけが太線でつながる）
+    const lw = Math.max(1, s * 0.07);
+    for (let gr = r0; gr <= r1; gr++) for (let gc = c0; gc <= c1; gc++) {
+      const id = idAt(gr, gc); if (getNode(id)[5] === 'blocked') continue;
+      const [x, y] = toScreen(gr, gc);
+      for (const [d, dr, dc] of [['E', 0, 1], ['S', 1, 0]]) {
+        if (gr + dr > N || gc + dc > N) continue;
+        const n = idAt(gr + dr, gc + dc); if (getNode(n)[5] === 'blocked') continue;
+        const a = canPass(id, n, d), b = canPass(n, id, OPP[d]); if (!a && !b) continue;
+        const gate = macroOf(id) !== macroOf(n), [x2, y2] = toScreen(gr + dr, gc + dc);
+        const ua = isU(id), ub = isU(n), onPath = (pathSet.has(id) || ua) && (pathSet.has(n) || ub) && (pathSet.has(id) || pathSet.has(n));
+        ctx.strokeStyle = onPath ? colors.path : ua && ub ? colors.accent : gate ? colors.gate : colors.link;
+        ctx.lineWidth = onPath || (ua && ub) ? lw * 2.6 : gate ? lw * 2.4 : lw;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
+        if (a !== b && s >= 6) arrowHead((x + x2) / 2, (y + y2) / 2, Math.atan2(y2 - y, x2 - x) + (a ? 0 : Math.PI), Math.max(3.5, s * 0.17), ctx.strokeStyle);
+      }
+    }
+    // マス
+    for (let gr = r0; gr <= r1; gr++) for (let gc = c0; gc <= c1; gc++) {
+      const id = idAt(gr, gc), f = getNode(id), t = f[5], [x, y] = toScreen(gr, gc), u = isU(id);
+      const onPath = pathSet.has(id), hit = hits && hits.has(id);
+      const tre = t === 'keystone' && TREASURE.has(f[8]);
+      const r = tre ? s * .44 : t === 'keystone' ? s * .36 : t === 'notable' ? s * .27 : t === 'start' ? s * .34 : s * .15;
+      if (t === 'blocked') { ctx.strokeStyle = colors.wall; ctx.lineWidth = Math.max(1.5, s * .07); const k = s * .16; ctx.beginPath(); ctx.moveTo(x - k, y - k); ctx.lineTo(x + k, y + k); ctx.moveTo(x + k, y - k); ctx.lineTo(x - k, y + k); ctx.stroke(); continue; }
+      if (hit) { ctx.save(); ctx.fillStyle = colors.hit; ctx.globalAlpha = .4; ctx.shadowColor = colors.hit; ctx.shadowBlur = Math.max(8, s * .6); ctx.beginPath(); ctx.arc(x, y, Math.max(r + s * .24, 6), 0, 7); ctx.fill(); ctx.restore(); }
+      if (route && route.has(id) && !u) { ctx.fillStyle = colors.path; ctx.globalAlpha = .25; ctx.beginPath(); ctx.arc(x, y, Math.max(r + s * .12, s * .3), 0, 7); ctx.fill(); ctx.globalAlpha = 1; }
+      let fill = tre ? colors.start : t === 'keystone' ? colors.keystone : t === 'notable' ? colors.notable : t === 'start' ? colors.start : colors.muted;
+      if (t === 'small' && u) { const code = tree().u[id]; fill = code ? colors['st-' + CODE_KEY[code].toLowerCase()] : colors.accent; }
+      if (t === 'start' && id !== START[st.fam]) fill = colors.wall;
+      // 検索中は、見つからなかったマスを薄くして光ったマスを目立たせる
+      ctx.globalAlpha = (u || t !== 'small' ? 1 : .5) * (hits && !hit ? .3 : 1);
+      ctx.fillStyle = fill; ctx.beginPath();
+      if (t === 'notable') { ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y); ctx.closePath(); }
+      else if (t === 'start') { for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; ctx.lineTo(x + rr * Math.cos(a), y + rr * Math.sin(a)); } ctx.closePath(); }
+      else ctx.arc(x, y, r, 0, 7);
+      ctx.fill(); ctx.globalAlpha = 1;
+      if (u) { ctx.strokeStyle = colors.accent; ctx.lineWidth = Math.max(1.5, s * .08); ctx.beginPath(); ctx.arc(x, y, r + s * .07, 0, 7); ctx.stroke(); }
+      else if (onPath) { ctx.strokeStyle = colors.path; ctx.lineWidth = Math.max(1.5, s * .07); ctx.beginPath(); ctx.arc(x, y, r + s * .07, 0, 7); ctx.stroke(); }
+      if (hit) { ctx.strokeStyle = colors.hit; ctx.lineWidth = Math.max(2, s * .09); ctx.beginPath(); ctx.arc(x, y, Math.max(r + s * .14, 4.5), 0, 7); ctx.stroke(); }
+      if (f[10] !== undefined && s >= 10) { const e = exits(id); if (e.length === 1) arrowHead(x, y, { N: -Math.PI / 2, E: 0, S: Math.PI / 2, W: Math.PI }[e], Math.max(4, s * .14), t === 'small' ? colors.fg : colors.panel); }
+      if (admin.on && (OV.has(id) || [...'NESW'].some(d => OVG.has(id + '_' + d)))) { ctx.strokeStyle = colors.keystone; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.strokeRect(x - s * .45, y - s * .45, s * .9, s * .9); ctx.setLineDash([]); }
+      if (id === selected || id === hover) { ctx.strokeStyle = colors.fg; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, Math.max(r + s * .17, 7), 0, 7); ctx.stroke(); }
+      if ((s >= 26 && t === 'notable') || (s >= 9 && t === 'keystone') || (s >= 14 && t === 'start')) {
+        ctx.font = `${t === 'keystone' ? 700 : 500} ${clamp(s * .24, 10, 14)}px "Zen Kaku Gothic New", sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.lineWidth = 3; ctx.strokeStyle = colors.canvas; ctx.strokeText(f[8], x, y + r + 3); ctx.fillStyle = colors.fg; ctx.fillText(f[8], x, y + r + 3);
+      }
+    }
+  }
+
+  // ---- 入力（ドラッグ・ピンチ・ホイール・クリック・キーボード）
+  const pointers = new Map(); let drag = null, pinch = null, moved = false;
+  cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); pointers.set(e.pointerId, [e.offsetX, e.offsetY]); moved = false;
+    if (pointers.size === 1) drag = { x: e.offsetX, y: e.offsetY, vx: view.x, vy: view.y };
+    if (pointers.size === 2) { const [a, b] = [...pointers.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, s: view.s, cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2 }; drag = null; } });
+  cv.addEventListener('pointermove', e => {
+    if (pointers.has(e.pointerId)) pointers.set(e.pointerId, [e.offsetX, e.offsetY]);
+    if (pinch && pointers.size === 2) { const [a, b] = [...pointers.values()]; zoomAt(pinch.cx, pinch.cy, pinch.s * Math.hypot(a[0] - b[0], a[1] - b[1]) / pinch.d); moved = true; return; }
+    if (drag) { const dx = e.offsetX - drag.x, dy = e.offsetY - drag.y; if (Math.abs(dx) + Math.abs(dy) > 5) { moved = true; cv.classList.add('dragging'); } if (moved) { view.x = drag.vx - dx / view.s; view.y = drag.vy - dy / view.s; tip.hidden = true; draw(); } return; }
+    if (e.pointerType === 'mouse') setHover(toCell(e.offsetX, e.offsetY), e.offsetX, e.offsetY);
+  });
+  const endPtr = e => { pointers.delete(e.pointerId); if (pointers.size < 2) pinch = null;
+    if (drag && !moved && e.type === 'pointerup') { const id = toCell(e.offsetX, e.offsetY); if (id) select(id); }
+    if (pointers.size === 0) { drag = null; cv.classList.remove('dragging'); } };
+  cv.addEventListener('pointerup', endPtr); cv.addEventListener('pointercancel', endPtr);
+  cv.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse' && !drag) setHover(null); });
+  // ダブルクリックで取得（離れたマスは最短ルートごと）、右クリックで解除。結果はカードに出す
+  cv.addEventListener('dblclick', e => {
+    const id = toCell(e.offsetX, e.offsetY); if (!id) return;
+    if (selected !== id) select(id);
+    tip.hidden = true;
+    if (isU(id)) return;
+    if (!enterable(id)) say('このマスは取得できません。', 'err'); else if (canUnlock(id)) doUnlock(id); else doPath(id);
+    renderCard();
+  });
+  cv.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    const id = toCell(e.offsetX, e.offsetY); if (!id) return;
+    if (selected !== id) select(id);
+    tip.hidden = true;
+    if (isU(id)) { doReset(id); renderCard(); }
+  });
+  cv.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.offsetX, e.offsetY, view.s * Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+  cv.addEventListener('keydown', e => {
+    const step = 60 / view.s, k = e.key;
+    if (k === 'ArrowLeft') view.x -= step; else if (k === 'ArrowRight') view.x += step; else if (k === 'ArrowUp') view.y -= step; else if (k === 'ArrowDown') view.y += step;
+    else if (k === '+' || k === '=') zoomAt(W / 2, H / 2, view.s * 1.25); else if (k === '-') zoomAt(W / 2, H / 2, view.s / 1.25);
+    else if (k === 'Enter') { const id = toCell(W / 2, H / 2); if (id) select(id); } else return;
+    e.preventDefault(); draw();
+  });
+  function zoomAt(px, py, ns) { ns = clamp(ns, Math.min(W, H) / (N + 4), 70); const wx = px / view.s + view.x, wy = py / view.s + view.y; view.s = ns; view.x = wx - px / ns; view.y = wy - py / ns; draw(); }
+  $('#zIn').onclick = () => zoomAt(W / 2, H / 2, view.s * 1.35);
+  $('#zOut').onclick = () => zoomAt(W / 2, H / 2, view.s / 1.35);
+  $('#zHome').onclick = () => { goHome(); draw(); };
+  $('#zAll').onclick = () => { view.s = Math.min(W, H) / (N + 2); view.x = (N - W / view.s) / 2; view.y = (N - H / view.s) / 2; draw(); };
+
+  function setHover(id, px, py) {
+    if (id !== hover) { hover = id; draw(); }
+    if (!id) { tip.hidden = true; return; }
+    const f = getNode(id), p = pathTo(id), t = f[5];
+    const state = isU(id) ? '<span class="state own">習得済み</span>' : canUnlock(id) ? `<span class="state can">${COST[t]}ptで今すぐ取れる</span>` : p ? `<span class="state can">ここまで ${pathCost(p)}pt・${p.length}マス</span>` : !enterable(id) ? '<span class="state no">取得できないマス</span>' : '<span class="state no">今のツリーからは届かない</span>';
+    const eff = t === 'small' && f[6] === '-' ? `${STAT_JA[isU(id) && tree().u[id] ? CODE_KEY[tree().u[id]] : selStat()]} +${SMALL}` : shownEff(f[6]).map(effText).join('、');
+    tip.innerHTML = `<b>${esc(f[8])}</b><span class="small muted">${TYPE_JA[t]}</span>${eff ? `<span>${esc(eff)}</span>` : ''}${state}<span class="small muted">クリックで選択${isU(id) ? (t === 'start' ? '' : '・右クリックで解除') : enterable(id) && (canUnlock(id) || p) ? '・ダブルクリックで取得' : ''}</span>`;
+    tip.hidden = false;
+    const tw = tip.offsetWidth, th = tip.offsetHeight;
+    tip.style.left = clamp(px + 16, 8, Math.max(8, W - tw - 8)) + 'px'; tip.style.top = clamp(py + 16, 8, Math.max(8, H - th - 8)) + 'px';
+  }
+  function select(id) { selected = id; if (admin.on) admin.sel = id; tip.hidden = true; say(''); renderCard(); if (admin.on) renderAdmin(); draw(); }
+
+  // ================= カード（選択中のマス）
+  const msgHTML = () => `<div class="msg ${msg.cls}" aria-live="polite">${esc(msg.t)}</div>`;
+  function renderCard() {
+    const box = $('#card');
+    if (!selected) { box.innerHTML = '<h2>マスを選んでください</h2><p class="small muted">ツリーのマスをクリックまたはタップすると、効果と取り方がここに出ます。カーソルを合わせると、そこまでの最短ルートが光ります。下の大ノード一覧から目的地を選ぶこともできます。</p>' + msgHTML(); return; }
+    const id = selected, f = getNode(id), t = f[5], u = isU(id), p = pathTo(id);
+    const [mr, mc, r, c] = parse(id);
+    let eff;
+    if (t === 'small' && f[6] === '-') {
+      const k = u && tree().u[id] ? CODE_KEY[tree().u[id]] : selStat();
+      eff = `<span class="eff"><span class="dot" style="background:var(${STAT_VAR[k]})"></span>${STAT_JA[k]} +${SMALL}</span>${u ? '' : '<span class="small muted" style="align-self:center">上の「小ノードで上げる」で切り替え</span>'}`;
+    } else eff = shownEff(f[6]).map(e => `<span class="eff${e[1] < 0 ? ' neg' : ''}">${esc(effText(e))}</span>`).join('');
+    let state, acts = '';
+    if (u) { state = '<span class="state own">習得済み</span>'; if (t !== 'start') acts = `<button type="button" class="big" data-a="reset">${resetCost().toLocaleString('ja-JP')}ケルで解除する</button>`; }
+    else if (t === 'blocked') state = '<span class="state no">進入不可のマスです</span>';
+    else if (t === 'start') state = '<span class="state no">ほかの職業の起点なので取得できません</span>';
+    else if (canUnlock(id)) { const ok = avail() >= COST[t]; state = '<span class="state can">今すぐ取れます</span>'; acts = `<button type="button" class="primary big" data-a="take"${ok ? '' : ' disabled'}>${COST[t]}ptで習得する</button>${ok ? '' : `<span class="small" style="color:var(--bad)">残り${avail()}ptでは足りません</span>`}`; }
+    else if (p) { const tot = pathCost(p), ok = tot <= avail(); state = `<span class="state far">${p.length}マス先にあります。ツリー上のオレンジの線がルートです</span>`; acts = `<button type="button" class="primary big" data-a="path"${ok ? '' : ' disabled'}>${tot}ptでここまで取る・${p.length}マス</button>${ok ? '' : `<span class="small" style="color:var(--bad)">残り${avail()}ptでは足りません</span>`}`; }
+    else state = '<span class="state no">今のツリーからは届きません。壁や一方通行があるので、別の方向から回り込む必要があります。</span>';
+    const gates = [...'NESW'].filter(d => { const n = neighbor(id, d); return n && macroOf(n) !== macroOf(id) && (canPass(id, n, d) || canPass(n, id, OPP[d])); })
+      .map(d => { const n = neighbor(id, d), a = canPass(id, n, d), b = canPass(n, id, OPP[d]); return `${ARROW[d]}${a && b ? '双方向' : a ? '出るだけ' : '入るだけ'}`; }).join('、');
+    box.innerHTML = `<h2>${esc(f[8])} <span class="badge b-${t}">${TYPE_JA[t]}${COST[t] ? ` ${COST[t]}pt` : ''}</span></h2>
+      ${f[9] && f[9] !== SYN_DESC ? `<p class="small muted">${esc(f[9])}</p>` : ''}
+      <div class="effs">${eff || '<span class="small muted">効果なし</span>'}</div>
+      ${state}
+      <div class="acts">${acts}</div>
+      ${msgHTML()}
+      <dl class="kv"><dt>場所</dt><dd>区画 ${mr}-${mc} の ${r}行${c}列 <span class="muted num small">${id}</span></dd><dt>進める向き</dt><dd>${exitArrows(id) || 'なし'}${f[10] !== undefined ? '・向き限定マス' : ''}</dd>${gates ? `<dt>門</dt><dd>${gates}</dd>` : ''}</dl>`;
+    box.querySelectorAll('[data-a]').forEach(b => b.onclick = () => { const a = b.dataset.a; if (a === 'take') doUnlock(selected); else if (a === 'path') doPath(selected); else doReset(selected); renderCard(); });
+  }
+
+  // ================= ステータス・一覧
+  function statTotals(key = 'pts') { const L = st.lv, f = fam(), e = treeEffects(), off = spent() > L; const t = {}; for (const k of STAT_KEYS) t[k] = jobBase(f.f, k, L) + (off ? 0 : (e[key][k] || 0)); return t; }
+  function renderStats() {
+    const L = st.lv, f = fam(), e = treeEffects(), sp = spent(), over = sp > L;
+    $('#jobName').textContent = `${f.jobs[tierOf(L)]} Lv${L}`;
+    $('#spent').textContent = sp; $('#allPts').textContent = L;
+    const m = $('#meter'); m.classList.toggle('over', over); m.firstElementChild.style.width = clamp(sp / L * 100, 0, 100) + '%';
+    $('#ptNote').innerHTML = over ? '<span style="color:var(--bad)">使用ポイントがレベルを超えています。ツリーの効果はすべて無効です。</span>' : `残り <b>${L - sp}</b>pt・習得 ${count()}マス・解除で使ったケル ${st.kel.toLocaleString('ja-JP')}`;
+    const tot = statTotals(), totCalc = statTotals('calc');
+    $('#pts').innerHTML = STAT_KEYS.map(k => { const b = jobBase(f.f, k, L), tr = tot[k] - b, tc = totCalc[k] - b; return `<a class="pt" href="#spc-${k}" title="${STAT_JA[k]}の効果を見る" style="--c:var(${STAT_VAR[k]})"><span>${STAT_JA[k]}</span><b>${Math.round(tot[k])}</b><span>${tr ? `ツリー+${Math.round(tr)}・計算では+${Math.round(tc * 10) / 10}` : '基礎のみ'}</span></a>`; }).join('');
+    const E = equipAt(L), base = {}; for (const k of STAT_KEYS) base[k] = jobBase(f.f, k, L);
+    const E2 = { ...E }; if (!over) for (const [k, v] of Object.entries(e.V)) E2[k] = (E2[k] || 0) + v;
+    const o0 = finalStats(L, f, base, E), o1 = finalStats(L, f, over ? base : totCalc, over ? E : E2);
+    const rows = [['通常攻撃DPS', 'phys', 0], ['物理スキル火力', 'physSkill', 0], ['魔法スキル火力', 'magic', 1], ['投射火力', 'proj', 0], ['耐久 EHP', 'ehp', 0], ['最大HP', 'hp', 0], ['防御率 実数値', 'defRaw', 1], ['防御力割合 %', 'pdef', 2], ['表示クリ率 %', 'cc', 1], ['クリ倍率', 'cs', 2], ['CD短縮 %', 'cd', 1], ['攻撃速度 /秒', 'aspd', 2]];
+    const f2 = (x, d) => x.toLocaleString('ja-JP', { minimumFractionDigits: d, maximumFractionDigits: d });
+    $('#statTbl').innerHTML = '<thead><tr><th class="l">平均的な装備での値</th><th>ツリー無し</th><th>現在</th><th>倍率</th></tr></thead><tbody>' + rows.map(([lab, k, d], i) => {
+      const a = o0[k], b = o1[k], r = Math.abs(a) > 1e-9 ? b / a : null, cls = b > a + 1e-9 ? 'up' : b < a - 1e-9 ? 'down' : '';
+      return `<tr${i === 5 ? ' style="border-top:2px solid var(--line)"' : ''}><td class="l">${lab}</td><td>${f2(a, d)}</td><td class="${cls}">${f2(b, d)}</td><td class="${cls}">${r == null ? '—' : '×' + r.toFixed(2)}</td></tr>`;
+    }).join('') + '</tbody>';
+    const agg = new Map();
+    Object.keys(tree().u).map(getNode).filter(x => x[5] === 'notable' || x[5] === 'keystone').forEach(x => { const k = x[5] + '|' + x[8]; agg.set(k, (agg.get(k) || 0) + 1); });
+    $('#nodeChips').innerHTML = agg.size ? [...agg].sort((a, b) => (a[0] < b[0] ? 1 : -1)).map(([k, n]) => { const [t, nm] = k.split('|'); return `<span class="${t === 'keystone' ? 'k' : ''}">${esc(nm)}${n > 1 ? ' ×' + n : ''}</span>`; }).join('') + (e.other.length ? `<span>${e.other.map(([k, v]) => `${LABEL[k] || k}+${v}`).join('、')}</span>` : '') : '<span class="small muted">中・大ノードはまだありません</span>';
+  }
+  function renderKeystones() {
+    const list = [];
+    for (let gr = 1; gr <= N; gr++) for (let gc = 1; gc <= N; gc++) { const id = idAt(gr, gc), f = getNode(id); if (f[5] === 'keystone') { const p = pathTo(id); list.push({ id, f, own: isU(id), cost: isU(id) ? -1 : p ? pathCost(p) : Infinity }); } }
+    list.sort((a, b) => a.cost - b.cost);
+    $('#klist').innerHTML = list.map(k => `<button type="button" class="krow${k.own ? ' own' : ''}" data-id="${k.id}"><b>${esc(k.f[8])}</b><span class="num">${k.own ? '習得済み' : k.cost === Infinity ? '届かない' : k.cost + 'pt'}</span><span style="grid-column:1/-1">${esc(shownEff(k.f[6]).map(effText).join('、'))}</span></button>`).join('');
+    $('#klist').querySelectorAll('[data-id]').forEach(b => b.onclick = () => { const [gr, gc] = gpos(b.dataset.id); centerOn(gr, gc, Math.max(view.s, 30)); select(b.dataset.id); });
+  }
+  function renderStatSeg() {
+    $('#statSeg').innerHTML = STAT_KEYS.map(k => `<button type="button" data-k="${k}" aria-pressed="${k === selStat()}"><span class="dot" style="background:var(${STAT_VAR[k]})"></span>${STAT_JA[k]}</button>`).join('');
+    $('#statSeg').querySelectorAll('button').forEach(b => b.onclick = () => { tree().sel = b.dataset.k; save(); renderStatSeg(); renderCard(); });
+  }
+  // 取ったノードの効果を、効果の種類（ステータス）ごとに小・中・大ノード別で合計する
+  const TOTAL_ORDER = ['StatsAD', 'StatsDF', 'StatsMD', 'StatsAS', 'StatsMS', 'TreeStatsAD', 'TreeStatsDF', 'TreeStatsMD', 'TreeStatsAS', 'TreeStatsMS', 'PDamage', 'PMD', 'AD', 'PDefense', 'AddHP', 'Defense', 'CC', 'CS', 'MCC', 'MCS', 'MR', 'MS', 'BaseAS', 'AS', 'CD', 'Speed', 'Rare', 'AddExp', 'AddMoney', 'Fire', 'Water', 'Light', 'Wind', 'Dark', 'Divine'];
+  function renderTotals() {
+    const sum = {};
+    const add = (k, src, v) => { (sum[k] ||= { small: 0, notable: 0, keystone: 0 })[src] += v; };
+    for (const [id, code] of Object.entries(tree().u)) {
+      const f = getNode(id), t = f[5];
+      if (code >= 1) { add('Stats' + CODE_KEY[code], 'small', SMALL); continue; }
+      if (!COST[t]) continue;
+      for (const [k, v] of effList(f[6])) add(k, t, v);
+    }
+    const keys = Object.keys(sum).sort((a, b) => (TOTAL_ORDER.indexOf(a) + 999 * (TOTAL_ORDER.indexOf(a) < 0)) - (TOTAL_ORDER.indexOf(b) + 999 * (TOTAL_ORDER.indexOf(b) < 0)));
+    const fmt = v => { if (Math.abs(v) < 1e-9) return '—'; const r = Math.round(v * 1000) / 1000; return (r > 0 ? '+' : '') + r; };
+    const cell = (v, cls = '') => `<td class="${Math.abs(v) < 1e-9 ? 'zero' : v < 0 ? 'neg' : ''} ${cls}">${fmt(v)}</td>`;
+    const over = spent() > st.lv;
+    $('#totals').innerHTML = keys.length ? (over ? '<p class="small" style="color:var(--bad)">ポイント超過中のため、ゲームではこの効果はすべて無効になります。</p>' : '') +
+      '<table><thead><tr><th class="l">効果</th><th>小ノード</th><th>中ノード</th><th>大ノード</th><th>合計</th></tr></thead><tbody>' +
+      keys.map(k => { const x = sum[k]; return `<tr><td>${esc(LABEL[k] || k)}</td>${cell(x.small)}${cell(x.notable)}${cell(x.keystone)}${cell(x.small + x.notable + x.keystone, 'sum')}</tr>`; }).join('') + '</tbody></table>'
+      : '<p class="small muted">まだノードを取っていません。</p>';
+  }
+  // ステータスの内訳：装備だけ／＋職業基礎／＋ツリー の3つの状態の差から、それぞれが増やした量を出す
+  const DETAIL_ROWS = [
+    ['ステータスpt'],
+    ['攻撃力', 'pt:AD', 0], ['防御力', 'pt:DF', 0], ['魔法力', 'pt:MD', 0], ['攻撃速度', 'pt:AS', 0], ['移動速度', 'pt:MS', 0],
+    ['効果の計算に使う値'],
+    ['攻撃力', 'calc:AD', 1], ['防御力', 'calc:DF', 1], ['魔法力', 'calc:MD', 1], ['攻撃速度', 'calc:AS', 1], ['移動速度', 'calc:MS', 1],
+    ['耐久'],
+    ['最大HP', 'hp', 1], ['防御率 実数値', 'defRaw', 1], ['防御力割合 %', 'pdef', 2],
+    ['火力'],
+    ['平均威力', 'dmg', 1], ['攻撃力属性', 'atk', 1], ['物理ダメージ %', 'pdmg', 2], ['魔法ダメージ %', 'pmd', 2], ['投射ダメージ %', 'ad', 2],
+    ['表示クリ率 %', 'cc', 2], ['クリ倍率', 'cs', 3], ['スキルクリ率 %', 'mcc', 2], ['スキルクリ倍率', 'mcs', 3],
+    ['魔法変換率 %', 'mr', 2], ['魔法変換倍率', 'mmul', 3], ['CD短縮 %', 'cd', 2], ['攻撃速度 /秒', 'aspd', 3], ['移動速度', 'speed', 4],
+  ];
+  function renderDetail() {
+    const L = st.lv, f = fam(), e = treeEffects(), over = spent() > L;
+    const zero = Object.fromEntries(STAT_KEYS.map(k => [k, 0])), base = {}, all = {}, allCalc = {};
+    for (const k of STAT_KEYS) { base[k] = jobBase(f.f, k, L); all[k] = base[k] + (over ? 0 : (e.pts[k] || 0)); allCalc[k] = base[k] + (over ? 0 : (e.calc[k] || 0)); }
+    const E = equipAt(L), E2 = { ...E }; if (!over) for (const [k, v] of Object.entries(e.V)) E2[k] = (E2[k] || 0) + v;
+    const oA = finalStats(L, f, zero, E), oB = finalStats(L, f, base, E), oC = finalStats(L, f, allCalc, E2);
+    const val = (o, pts, calcPts, key) => (key.startsWith('pt:') ? pts[key.slice(3)] : key.startsWith('calc:') ? calcPts[key.slice(5)] : o[key]);
+    const fmt = (v, d, sign) => { if (Math.abs(v) < Math.pow(10, -d) / 2) return '—'; const t = v.toLocaleString('ja-JP', { minimumFractionDigits: d, maximumFractionDigits: d }); return sign && v > 0 ? '+' + t : t; };
+    const td = (v, d, cls, sign) => `<td class="${cls}${Math.abs(v) < Math.pow(10, -d) / 2 ? ' zero' : v < 0 ? ' neg' : ''}">${fmt(v, d, sign)}</td>`;
+    let h = (over ? '<p class="small" style="color:var(--bad)">使用ポイントがレベルを超えているため、ツリーの分は0として表示しています。ゲームでも無効です。</p>' : '') +
+      '<table><thead><tr><th class="l">ステータス</th><th>装備</th><th>職業基礎</th><th>ツリー</th><th>合計</th></tr></thead><tbody>';
+    for (const [label, key, d] of DETAIL_ROWS) {
+      if (!key) { h += `<tr class="sec"><td colspan="5">${label}</td></tr>`; continue; }
+      const a = val(oA, zero, zero, key), b = val(oB, base, base, key), c = val(oC, all, allCalc, key);
+      h += `<tr><td>${label}</td>${td(a, d, '', false)}${td(b - a, d, '', true)}${td(c - b, d, 'tree', true)}${td(c, d, 'sum', false)}</tr>`;
+    }
+    $('#detail').innerHTML = h + '</tbody></table>';
+  }
+  // ステータスptの効果：finalStats と同じ換算式を、ステータスごとに「何へ・いくつ」に分けて見せる
+  // [表示名, 計算に使うpt→効果量, 小数の桁, 式の要点, 効く条件・条件の判定]
+  function ptFxDefs(L, fa) {
+    const R = STAT_RATE, third = Math.floor(L / 3), n = v => +(v * R).toPrecision(3);
+    const sat = (cap, k) => x => cap * R * (1 - Math.exp(-x / k));
+    return {
+      AD: [
+        ['物理ダメージ %', p => p.AD * 0.2 * R, 2, `1ptで+${n(0.2)}`],
+        ['クリ倍率', p => p.AD * 0.005 * R, 4, `1ptで+${n(0.005)}`, ['Knight系か、攻撃力がLvの1/3以上', p => fa === 2 || p.AD >= third]],
+        ['スキルクリ倍率', p => p.AD * 0.0025 * R, 4, `1ptで+${n(0.0025)}`, ['Knight系か、攻撃力がLvの1/3以上', p => fa === 2 || p.AD >= third]],
+      ],
+      DF: [
+        ['防御力割合 %', p => p.DF * 0.2 * R, 2, `1ptで+${n(0.2)}`],
+        ['最大HP', p => p.DF * 0.1 * R, 1, `1ptで+${n(0.1)}`, ['SwordMan系か、防御力がLvの1/3以上', p => fa === 1 || p.DF >= third]],
+      ],
+      MD: [
+        ['魔法ダメージ %', p => p.MD * 0.2 * R, 2, `1ptで+${n(0.2)}`],
+        ['魔法変換率 %', p => p.MD * 0.2 * R, 2, `1ptで+${n(0.2)}`],
+        ['魔法変換倍率', p => p.MD * 0.002 * R, 4, `1ptで+${n(0.002)}`],
+        ['スキルクリ率 %', p => sat(50, 200)(p.MD), 2, `上限${n(50)}`],
+      ],
+      AS: [
+        ['基礎攻撃速度', p => sat(2, 400)(p.AS), 3, `上限${n(2)}`],
+        ['クリ率 %', p => sat(50, 400)(p.AS), 2, `上限${n(50)}`],
+        ['スキルクリ率 %', p => sat(50, 400)(p.AS) / 2, 2, `上限${n(25)}`],
+      ],
+      MS: [
+        ['移動速度', p => sat(0.2, 400)(p.MS), 4, `上限${n(0.2)}`],
+        ['CD短縮 %', p => sat(30, 300)(p.MS), 2, `上限${n(30)}`],
+      ],
+    };
+  }
+  function renderPtFx() {
+    const L = st.lv, f = fam(), e = treeEffects(), over = spent() > L;
+    const base = {}, tot = {}, calc = {};
+    for (const k of STAT_KEYS) { base[k] = jobBase(f.f, k, L); tot[k] = base[k] + (over ? 0 : (e.pts[k] || 0)); calc[k] = base[k] + (over ? 0 : (e.calc[k] || 0)); }
+    const defs = ptFxDefs(L, f.f);
+    const fx = (v, d) => v.toLocaleString('ja-JP', { minimumFractionDigits: d, maximumFractionDigits: d });
+    const r1 = v => Math.round(v * 10) / 10;
+    $('#ptfx').innerHTML = STAT_KEYS.map(k => {
+      const rows = defs[k].map(([lab, fn, d, how, cond]) => {
+        const on = p => p[k] > 0 && (!cond || cond[1](p));
+        const val = p => (on(p) ? fn(p) : 0);
+        const now = val(calc), gain = val({ ...calc, [k]: calc[k] + 10 }) - now;
+        const off = cond && !cond[1](calc);
+        return `<tr><td class="l">${lab}<span class="how">${how}${cond ? `<span class="${off ? 'off' : ''}">・${cond[0]}${off ? '・未達' : ''}</span>` : ''}</span></td><td>${now ? fx(now, d) : '—'}</td><td class="${gain > 0 ? 'up' : ''}">${gain > 0 ? '+' + fx(gain, d) : '—'}</td></tr>`;
+      }).join('');
+      const tr = tot[k] - base[k], extra = calc[k] - tot[k];
+      const src = `基礎 ${r1(base[k])}${tr ? `・ツリー +${r1(tr)}` : ''}${extra > 1e-9 ? `・計算分 +${r1(extra)}` : ''}`;
+      const note = k === 'DF' && f.f === 1 ? '<p class="small muted">SwordMan系は防御が高いほど火力も上がる</p>' : '';
+      return `<article class="spc" id="spc-${k}" style="--c:var(${STAT_VAR[k]})"><header><span class="dot" style="background:var(--c)"></span><h3>${STAT_JA[k]}</h3><span class="num v">${r1(calc[k])}</span></header>
+        <p class="small muted">${src}</p>
+        <table><thead><tr><th class="l">効果</th><th>今の値</th><th>+10ptで</th></tr></thead><tbody>${rows}</tbody></table>${note}</article>`;
+    }).join('');
+  }
+  // 職業ごとの基礎ステータス：今のレベルでの値。得意・苦手で伸び方が違う
+  const TIER_JA = { high: '得意', low: '苦手' };
+  function renderJobBase() {
+    const L = st.lv, cur = fam().f;
+    $('#jobBaseLv').textContent = `Lv${L}`;
+    $('#jobBaseRule').textContent = [['high', '得意'], ['normal', '普通'], ['low', '苦手']].map(([t, ja]) => { const [b, g] = JOB_BASE[t]; return `${ja} ${b ? b + '＋' : ''}Lv×${g}`; }).join('・');
+    $('#jobBase').innerHTML = '<thead><tr><th class="l">職業系統</th>' + STAT_KEYS.map(k => `<th><span class="dot" style="background:var(${STAT_VAR[k]})"></span> ${STAT_JA[k]}</th>`).join('') + '</tr></thead><tbody>' +
+      S.families.map(f => `<tr${f.f === cur ? ' class="cur"' : ''}><td class="l">${esc(f.name)}</td>` + STAT_KEYS.map(k => { const t = JOB_TIER[f.f][k]; return `<td class="${t || ''}">${Math.round(jobBase(f.f, k, L) * 10) / 10}${t ? `<span class="tier">${TIER_JA[t]}</span>` : ''}</td>`; }).join('') + '</tr>').join('') + '</tbody>';
+  }
+  // ================= 効果の検索
+  // マスの名前・説明・効果名（短い名前と正式な名前）・種類に、入力した文字をすべて含むマスを光らせる。全角・半角と大文字・小文字は区別しない。
+  // 効果を持たない小ノード（職業の心得）と進入不可のマスは対象外
+  const qIn = $('#q'), qNext = $('#qNext'), qInfo = $('#qInfo'), Q_HELP = qInfo.textContent;
+  const norm = t => String(t).normalize('NFKC').toLowerCase();
+  const nodeText = f => norm([f[8], f[9] !== SYN_DESC ? f[9] : '', TYPE_JA[f[5]], f[5] === 'keystone' && TREASURE.has(f[8]) ? '秘宝' : '',
+    ...shownEff(f[6]).flatMap(([k, v]) => [effText([k, v]), LABEL_FULL[k] || '', k])].join(' '));
+  let hitOrder = [], hitPos = -1;
+  function computeHits() {
+    const terms = norm(qIn.value).split(/\s+/).filter(Boolean);
+    hits = null; hitOrder = []; hitPos = -1;
+    if (terms.length) {
+      hits = new Set();
+      for (let gr = 1; gr <= N; gr++) for (let gc = 1; gc <= N; gc++) {
+        const id = idAt(gr, gc), f = getNode(id);
+        if (f[5] === 'blocked' || (f[5] === 'small' && f[6] === '-')) continue;
+        const t = nodeText(f); if (terms.every(x => t.includes(x))) hits.add(id);
+      }
+      // 「近い順に移動」の順番：まだ取っていないマスを今のツリーから近い順に、そのあと習得済みのマス
+      const d = id => (isU(id) ? 1e9 : reach && reach.dist.has(id) ? reach.dist.get(id) : 1e8);
+      hitOrder = [...hits].sort((a, b) => d(a) - d(b));
+    }
+    renderHitInfo();
+  }
+  function renderHitInfo() {
+    qNext.disabled = !hitOrder.length;
+    if (!hits) { qInfo.textContent = Q_HELP; return; }
+    const own = hitOrder.filter(isU).length;
+    qInfo.textContent = hits.size ? `${hits.size}マスが見つかりました${own ? `・うち習得済み ${own}` : ''}${hitPos >= 0 ? `・${hitPos + 1}番目を表示中` : ''}` : '見つかりませんでした。別の言葉で試してください';
+  }
+  qIn.addEventListener('input', () => { computeHits(); draw(); });
+  qIn.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); qNext.click(); } else if (e.key === 'Escape' && qIn.value) { e.preventDefault(); qIn.value = ''; computeHits(); draw(); } });
+  qNext.onclick = () => {
+    if (!hitOrder.length) return;
+    hitPos = (hitPos + 1) % hitOrder.length;
+    const id = hitOrder[hitPos], [gr, gc] = gpos(id); centerOn(gr, gc, Math.max(view.s, 30)); select(id); renderHitInfo();
+  };
+
+  function changed() { ensureStart(); renderTotals(); renderDetail(); renderPtFx(); renderJobBase(); save(); computeReach(); computeHits(); renderCard(); renderStats(); renderKeystones(); renderStatSeg(); $('#undo').disabled = !undoStack.some(x => x.fam === st.fam); renderRouteLv(); draw(); }
+
+  // ================= ADMINモード（マスの効果・種類・向き・門の編集）
+  // 保存先：共有db（nodes / gates）。dbが使えない画面ではこのブラウザだけに保存。サーバー用ファイルとして書き出せる
+  const admin = { on: false, sel: null, mode: 'none', db: null, dl: null, msg: '', msgCls: '', confirmClear: false, exportText: '' };
+  const LOCAL_ADMIN = 'asgardTreeAdmin';
+  const EFFECT_KEYS = Object.keys(LABEL);
+  const effDesc = eff => (eff === '-' ? '' : shownEff(eff).map(([k, v]) => `${LABEL_FULL[k] || LABEL[k] || k}が${Math.abs(v)}${v >= 0 ? '上昇' : '減少'}`).join('、') + 'する');
+  const saveLocalAdmin = () => { if (admin.mode !== 'local') return; try { window.localStorage.setItem(LOCAL_ADMIN, JSON.stringify({ nodes: Object.fromEntries(OV), gates: Object.fromEntries(OVG) })); } catch (e) {} };
+  function dataChanged() { changed(); if (admin.on) renderAdmin(); }
+  function adMsg(t, cls = '') { admin.msg = t; admin.msgCls = cls; const m = $('#adMsg'); if (m) { m.textContent = t; m.className = 'msg ' + cls; } }
+  async function writeNode(id, body) {
+    if (body) OV.set(id, body); else OV.delete(id);
+    if (admin.mode === 'shared') { const ref = admin.db.collection('nodes').doc(id); if (body) await ref.set(body); else await ref.delete(); } else saveLocalAdmin();
+  }
+  async function writeGate(key, open) {
+    const v = open === GATE.has(key) ? undefined : open;
+    if (v === undefined) OVG.delete(key); else OVG.set(key, v);
+    if (admin.mode === 'shared') { const ref = admin.db.collection('gates').doc(key); if (v === undefined) await ref.delete(); else await ref.set({ open: v }); } else saveLocalAdmin();
+  }
+  const errText = e => (e && e.code === 'invalid_argument' ? '保存できませんでした。このページを編集する権限がありません。' : e && e.code === 'quota_exceeded' ? '保存できませんでした。データの上限に達しています。' : '保存できませんでした。時間をおいてもう一度試してください。');
+  function effRow(i, k, v) { return `<div class="row" data-eff="${i}"><select aria-label="効果の種類">${EFFECT_KEYS.map(x => `<option value="${x}"${x === k ? ' selected' : ''}>${LABEL[x]} ${x}</option>`).join('')}</select><input type="number" step="any" class="val" value="${esc(String(v ?? ''))}" aria-label="値"><button type="button" data-del="${i}" aria-label="この効果を削除">×</button></div>`; }
+  function renderAdmin() {
+    const box = $('#admin'); box.hidden = !admin.on; if (!admin.on) return;
+    const id = admin.sel;
+    let h = `<div class="bar" style="justify-content:space-between"><h2>ADMIN：マスの編集</h2><span class="small muted">${admin.mode === 'shared' ? '共有データに保存し、全員の体験に反映' : 'このブラウザだけに保存'}</span></div>`;
+    if (!id) h += '<p class="small muted">ツリーのマスを選ぶと、種類・効果・向き・門を編集できます。</p>';
+    else {
+      const f = getNode(id), b = baseNode(id);
+      h += `<div class="small"><b class="num">${id}</b>${OV.has(id) ? '　<span style="color:var(--keystone)">編集済み</span>' : ''}</div>`;
+      if (f[5] === 'start') h += '<p class="small muted">起点は FamilyStart_14x14.txt で管理しているため編集できません。門は下で編集できます。</p>';
+      else {
+        const ex = f[10];
+        h += `<div class="row"><label for="adType">種類 <select id="adType">${[['small', '小ノード 1pt'], ['notable', '中ノード 2pt'], ['keystone', '大ノード 3pt'], ['blocked', '進入不可']].map(([v, t]) => `<option value="${v}"${v === f[5] ? ' selected' : ''}>${t}</option>`).join('')}</select></label></div>
+          <div class="row"><label for="adName">名前 <input type="text" id="adName" value="${esc(f[8])}"></label></div>
+          <div class="row"><label for="adDesc">説明 <input type="text" id="adDesc" value="${esc(f[9])}"></label><button type="button" id="adAutoDesc">効果から作る</button></div>
+          <div class="effed" id="adEff">${effList(f[6]).map(([k, v], i) => effRow(i, k, v)).join('')}</div>
+          <div class="row"><button type="button" id="adAddEff">効果を追加</button><span class="small muted">小ノードで効果が空なら、選んだステータス+1</span></div>
+          <div class="row"><label for="adArrow"><input type="checkbox" id="adArrow"${ex !== undefined ? ' checked' : ''}> 向き限定</label>${[...'NESW'].map(d => `<label for="adEx${d}"><input type="checkbox" id="adEx${d}"${ex !== undefined && ex.includes(d) ? ' checked' : ''}> ${ARROW[d]}</label>`).join('')}</div>
+          <div class="row"><button type="button" class="primary" id="adSave">保存する</button><button type="button" id="adRevert"${OV.has(id) ? '' : ' disabled'}>ファイルの値に戻す</button><span class="small muted">ファイル：${TYPE_JA[b[5]]}${b[6] !== '-' ? '・' + esc(b[6]) : ''}</span></div>`;
+      }
+      const cross = [...'NESW'].map(d => [d, neighbor(id, d)]).filter(([, n]) => n && macroOf(n) !== macroOf(id));
+      if (cross.length) {
+        h += '<hr><div class="small muted">区画の境目の門</div><div class="gates">';
+        for (const [d, n] of cross) { const out = hasGate(id + '_' + d), inn = hasGate(n + '_' + OPP[d]); const v = out && inn ? 'both' : out ? 'out' : inn ? 'in' : 'closed';
+          h += `<span>${ARROW[d]}</span><select data-gate="${d}" aria-label="${ARROW[d]}向きの門">${[['closed', '壁で通れない'], ['both', '双方向の門'], ['out', '一方通行 こちら→隣'], ['in', '一方通行 隣→こちら']].map(([k, t]) => `<option value="${k}"${k === v ? ' selected' : ''}>${t}</option>`).join('')}</select>`; }
+        h += '</div>';
+      }
+    }
+    h += `<div id="adMsg" class="msg ${admin.msgCls}">${esc(admin.msg)}</div>`;
+    const nList = [...OV.keys()].sort();
+    h += `<hr><div class="bar" style="justify-content:space-between"><span class="small">編集済み：マス <b>${nList.length}</b>・門 <b>${OVG.size}</b></span><span class="bar" style="gap:6px"><button type="button" id="adCheck">到達チェック</button><button type="button" id="adClear">${admin.confirmClear ? 'もう一度押すと全部消えます' : '編集を全部破棄'}</button></span></div>`;
+    if (nList.length) h += `<div class="list">${nList.map(x => `<button type="button" data-jump="${x}">${esc(OV.get(x).name || x)}</button>`).join('')}</div>`;
+    h += `<div class="bar" style="gap:6px"><span class="small muted">サーバー用ファイル</span><button type="button" id="adExpN">Nodes_14x14.txt</button><button type="button" id="adExpG">Gates_14x14.txt</button></div>`;
+    if (admin.exportText) h += `<textarea id="adOut" readonly aria-label="書き出したファイルの内容">${esc(admin.exportText)}</textarea><div class="bar" style="gap:6px"><button type="button" id="adCopy">コピー</button><span class="small muted">server/plugins/Skript_Data/SkillTree/ に置いて /skilltreedebug reload</span></div>`;
+    box.innerHTML = h; wireAdmin();
+  }
+  function readForm() {
+    const type = $('#adType').value, name = $('#adName').value.trim(), desc = $('#adDesc').value.trim();
+    if (/[\/#]/.test(name + desc)) return { err: '名前と説明に「/」「#」は使えません。データファイルの区切りに使うためです。' };
+    const parts = [];
+    for (const row of document.querySelectorAll('#adEff [data-eff]')) { const k = row.querySelector('select').value, v = row.querySelector('input').value.trim(); if (v === '' || !isFinite(+v) || +v === 0) return { err: `「${LABEL[k]}」の値を0以外の数値で入れてください。` }; parts.push(`${k}:${+v}`); }
+    if ((type === 'notable' || type === 'keystone') && !parts.length) return { err: '中ノード・大ノードには効果を1つ以上入れてください。' };
+    let ex = null; if ($('#adArrow').checked) ex = [...'NESW'].filter(d => $('#adEx' + d).checked).join('') || '-';
+    return { body: { type, effect: parts.length ? parts.join(';') : '-', name: name || SYN_NAME, desc: desc || (type === 'blocked' ? '何らかの力によって封じられており、進入できません。' : SYN_DESC), exits: ex } };
+  }
+  const sameAsBase = (id, b) => { const f = baseNode(id); return f[5] === b.type && f[6] === b.effect && f[8] === b.name && f[9] === b.desc && (f[10] ?? null) === b.exits; };
+  function wireAdmin() {
+    const on = (sel, ev, fn) => { const el = document.querySelector(sel); if (el) el.addEventListener(ev, fn); };
+    on('#adAddEff', 'click', () => $('#adEff').insertAdjacentHTML('beforeend', effRow(Date.now(), 'PDamage', 1)));
+    on('#adEff', 'click', e => { const b = e.target.closest('[data-del]'); if (b) b.closest('[data-eff]').remove(); });
+    on('#adAutoDesc', 'click', () => { const r = readForm(); if (r.err) { adMsg(r.err, 'err'); return; } $('#adDesc').value = effDesc(r.body.effect) || SYN_DESC; });
+    on('#adSave', 'click', async () => { const id = admin.sel, r = readForm(); if (r.err) { adMsg(r.err, 'err'); return; } try { await writeNode(id, sameAsBase(id, r.body) ? null : r.body); admin.msg = `${id} を保存しました。`; admin.msgCls = 'ok'; } catch (e) { admin.msg = errText(e); admin.msgCls = 'err'; } dataChanged(); });
+    on('#adRevert', 'click', async () => { try { await writeNode(admin.sel, null); admin.msg = 'ファイルの値に戻しました。'; admin.msgCls = 'ok'; } catch (e) { admin.msg = errText(e); admin.msgCls = 'err'; } dataChanged(); });
+    document.querySelectorAll('#admin [data-gate]').forEach(sel => sel.addEventListener('change', async () => {
+      const id = admin.sel, d = sel.dataset.gate, n = neighbor(id, d), v = sel.value;
+      try { await writeGate(id + '_' + d, v === 'both' || v === 'out'); await writeGate(n + '_' + OPP[d], v === 'both' || v === 'in'); admin.msg = `${ARROW[d]}向きの門を変更しました。`; admin.msgCls = 'ok'; } catch (e) { admin.msg = errText(e); admin.msgCls = 'err'; }
+      dataChanged();
+    }));
+    document.querySelectorAll('#admin [data-jump]').forEach(b => b.addEventListener('click', () => { const [gr, gc] = gpos(b.dataset.jump); centerOn(gr, gc, Math.max(view.s, 30)); select(b.dataset.jump); }));
+    on('#adCheck', 'click', () => { const r = reachCheck(); adMsg(r.text, r.ok ? 'ok' : 'err'); });
+    on('#adClear', 'click', async () => {
+      if (!admin.confirmClear) { admin.confirmClear = true; renderAdmin(); return; }
+      admin.confirmClear = false;
+      try { for (const id of [...OV.keys()]) await writeNode(id, null); for (const k of [...OVG.keys()]) { OVG.delete(k); if (admin.mode === 'shared') await admin.db.collection('gates').doc(k).delete(); } saveLocalAdmin(); admin.msg = '編集を全部破棄しました。'; admin.msgCls = 'ok'; } catch (e) { admin.msg = errText(e); admin.msgCls = 'err'; }
+      dataChanged();
+    });
+    on('#adExpN', 'click', () => exportFile('Nodes_14x14.txt', buildNodesTxt()));
+    on('#adExpG', 'click', () => exportFile('Gates_14x14.txt', buildGatesTxt()));
+    on('#adCopy', 'click', async () => { const t = $('#adOut'); try { await navigator.clipboard.writeText(t.value); adMsg('コピーしました。', 'ok'); } catch (e) { t.focus(); t.select(); adMsg('自動でコピーできなかったので、選択状態にしました。Ctrl+Cでコピーしてください。'); } });
+  }
+  function reachCheck() {
+    const keys = []; for (let r = 1; r <= N; r++) for (let c = 1; c <= N; c++) { const id = idAt(r, c); if (getNode(id)[5] === 'keystone') keys.push(id); }
+    const lines = []; let ok = true;
+    for (const [f, start] of Object.entries(START)) {
+      const seen = new Set([start]), q = [start];
+      while (q.length) { const a = q.pop(); for (const d of 'NESW') { const b = neighbor(a, d); if (!b || seen.has(b) || !enterable(b)) continue; if (canPass(a, b, d)) { seen.add(b); q.push(b); } } }
+      const macros = new Set([...seen].map(macroOf)).size, miss = keys.filter(k => !seen.has(k));
+      if (macros < M * M || miss.length) ok = false;
+      lines.push(`${S.families[f - 1].name}：区画${macros}/${M * M}・大ノード${keys.length - miss.length}/${keys.length}${miss.length ? `・届かない：${miss.slice(0, 3).join(' ')}${miss.length > 3 ? ' ほか' : ''}` : ''}`);
+    }
+    return { ok, text: (ok ? '問題なし。' : '届かない場所があります。') + lines.join(' ／ ') };
+  }
+  const HEAD = t => [`# SkillTree.sk 用データファイル：${t}・14×14区画構成`, '#', `# スキルツリー体験ページのADMINモードで ${new Date().toISOString().slice(0, 10)} に書き出したもの。`, '# server/plugins/Skript_Data/SkillTree/ に置いて /skilltreedebug reload で反映する。'];
+  function buildNodesTxt() {
+    const out = [...HEAD('スキルツリーのノード一覧'), '#', '# 形式: nodeID/macroRow/macroCol/row/col/type/effect/requires/displayName/description[/exits]', '#   exits : 向き限定マスだけに付ける。区画の中で進める向き。N=上 E=右 S=下 W=左、- はどこへも進めない。', ''];
+    for (let r = 1; r <= N; r++) for (let c = 1; c <= N; c++) { const f = getNode(idAt(r, c)); if (f[5] === 'small' && f[6] === '-' && f[10] === undefined && f[8] === SYN_NAME && f[9] === SYN_DESC) continue; out.push(f.slice(0, 10).join('/') + (f[10] !== undefined ? '/' + f[10] : '')); }
+    return out.join('\n') + '\n';
+  }
+  function buildGatesTxt() {
+    const out = [...HEAD('区画の境目の門'), '#', '# 形式: fromNodeID/dir', '#   fromNodeIDのマスからdirの向きへ、隣の区画に進める。片側だけ書いた門は一方通行。', ''];
+    for (let r = 1; r <= N; r++) for (let c = 1; c <= N; c++) { const id = idAt(r, c); for (const d of 'NESW') { const n = neighbor(id, d); if (n && macroOf(n) !== macroOf(id) && hasGate(id + '_' + d)) out.push(`${id}/${d}`); } }
+    return out.join('\n') + '\n';
+  }
+  async function exportFile(name, text) {
+    admin.exportText = text;
+    if (admin.dl) { try { await admin.dl.save({ filename: name, data: text }); admin.msg = `${name} を保存しました。`; admin.msgCls = 'ok'; } catch (e) { admin.msg = e && e.code === 'declined' ? '保存をキャンセルしました。下の欄からコピーもできます。' : '保存できなかったので、下の欄からコピーしてください。'; admin.msgCls = ''; } }
+    else { admin.msg = `${name} の内容を下に出しました。コピーして使ってください。`; admin.msgCls = ''; }
+    renderAdmin();
+  }
+  const adminBtn = $('#adminBtn');
+  adminBtn.onclick = () => { admin.on = !admin.on; admin.sel = selected; adminBtn.setAttribute('aria-pressed', admin.on); renderAdmin(); draw(); };
+  (async () => {
+    const cl = window.claude;
+    const [db, user, dl] = cl && cl.use ? await Promise.all([cl.use('db'), cl.use('user'), cl.use('downloads')]) : [null, null, null];
+    admin.db = db; admin.dl = dl;
+    if (db) {
+      admin.mode = (user ? await user.canEdit() : false) ? 'shared' : 'view';
+      db.collection('nodes').onSnapshot(snap => { OV.clear(); snap.docs.forEach(d => OV.set(d.id, { ...d.data() })); dataChanged(); }, () => {});
+      db.collection('gates').onSnapshot(snap => { OVG.clear(); snap.docs.forEach(d => OVG.set(d.id, !!d.data().open)); dataChanged(); }, () => {});
+    } else if (S.publicSite) {
+      // 公開用（export-static.mjs で書き出したもの）。ADMINモードは使わず、ファイルの値だけで表示する
+      admin.mode = 'view';
+    } else {
+      admin.mode = 'local';
+      try { const s = JSON.parse(window.localStorage.getItem(LOCAL_ADMIN) || 'null'); if (s) { Object.entries(s.nodes || {}).forEach(([k, v]) => OV.set(k, v)); Object.entries(s.gates || {}).forEach(([k, v]) => OVG.set(k, v)); } } catch (e) {}
+      dataChanged();
+    }
+    adminBtn.hidden = admin.mode === 'view';
+  })();
+
+  // ================= 上部の設定
+  const famSel = $('#fam'), lv = $('#lv'), lvN = $('#lvN'), routeSel = $('#route');
+  S.families.forEach(f => famSel.add(new Option(f.name, f.f)));
+  const famShort = f => (S.families[f - 1]?.name || '').replace(/系$/, '');
+  // 一覧：表示しない → 職業ごとのおすすめルート7種類（耐久重視・火力重視（物理/魔法/ハイブリッド）・耐久と火力両立（物理/魔法/ハイブリッド））
+  //   → 職業ごとのステータス特化 → 保存・追加したビルド → presets フォルダ。おすすめルートとステータス特化は、今のレベル用のルートを使う
+  function renderRouteOpts() {
+    routeSel.textContent = '';
+    routeSel.add(new Option('表示しない', -1));
+    S.families.forEach(fm => {
+      for (const [kind, label] of [['build', fm.name], ['spec', `${fm.name}・ステータス特化`]]) {
+        const g = document.createElement('optgroup'); g.label = label;
+        S.routes.forEach((r, i) => { if (r.fam === fm.f && (r.kind || 'build') === kind) g.appendChild(new Option(r.label.replace(/^[^ ]+ /, ''), i)); });
+        if (g.children.length) routeSel.appendChild(g);
+      }
+    });
+    for (const [list, label] of [[presets.local, '保存・追加したビルド'], [presets.folder, 'presets フォルダ']]) {
+      if (!list.length) continue;
+      const g = document.createElement('optgroup'); g.label = label;
+      list.forEach(p => g.appendChild(new Option(`${p.name}・${famShort(p.fam)} Lv${p.lv}`, p.id)));
+      routeSel.appendChild(g);
+    }
+    // presets フォルダを読み終わる前は、フォルダのプリセットを選んだ状態のまま待つ
+    if (typeof st.route === 'string' && !presetById(st.route) && (st.route.startsWith('p:l:') || presets.folderDone)) st.route = -1;
+    routeSel.value = curRoute() ? st.route : -1;
+    const del = $('#delPreset'); del.hidden = !presets.local.some(p => p.id === st.route); del.textContent = 'このプリセットを削除'; delArmed = false;
+    renderRouteLv();
+  }
+  // 選んでいるルートが何レベル用か
+  function renderRouteLv() {
+    const rt = curRoute(), top = ROUTE_LV[ROUTE_LV.length - 1];
+    $('#routeLv').textContent = !rt ? '' : typeof st.route === 'string' ? `Lv${rt.lv}のビルド` : st.lv > top ? `Lv${top}用のルート・Lv${top}より上のルートはありません` : `Lv${rt.lvFor}用のルート`;
+  }
+  let delArmed = false;
+  const goHome = () => { const [gr, gc] = gpos(START[st.fam]); centerOn(gr, gc, 40); };
+  famSel.onchange = () => { st.fam = +famSel.value; selected = null; goHome(); say(''); changed(); };
+  const showLv = () => { lv.value = st.lv; lvN.value = st.lv; };
+  const setLv = v => { st.lv = clamp(Math.round(+v || 1), 1, st.maxLv); showLv(); changed(); };
+  // 上限レベル：スライダーと数値欄の上限を変える。今のレベルが上限を超えたら上限に下げる
+  const lvMax = $('#lvMax');
+  const showMax = () => { lvMax.value = st.maxLv; lv.max = st.maxLv; lvN.max = st.maxLv; };
+  lvMax.onchange = () => { st.maxLv = clamp(Math.round(+lvMax.value || LV_CAP), 10, 999); showMax(); setLv(st.lv); };
+  lv.oninput = () => setLv(lv.value); lvN.onchange = () => setLv(lvN.value);
+  routeSel.onchange = () => { const v = routeSel.value; st.route = v.startsWith('p:') ? v : +v; save(); renderRouteOpts(); draw(); };
+  // 並び順に関係なく、取れるマスから順に取る。ポイントが尽きたらそこで止める
+  function applyCells(cells) {
+    let rest = cells.filter(([id]) => !isU(id)), n = 0, short = false, progress = true;
+    while (progress && rest.length && !short) {
+      progress = false; const next = [];
+      for (const c of rest) {
+        const [id, sk] = c;
+        if (short || !canUnlock(id)) { next.push(c); continue; }
+        const f = getNode(id); if (avail() < COST[f[5]]) { short = true; next.push(c); continue; }
+        tree().u[id] = f[5] === 'small' && f[6] === '-' ? CODE[sk || selStat()] : 0; n++; progress = true;
+      }
+      rest = next;
+    }
+    return { n, left: rest.length, short };
+  }
+  $('#takeRoute').onclick = () => {
+    const rt = curRoute();
+    if (!rt) { say('先にビルド例かプリセットを選んでください。', 'err'); renderCard(); return; }
+    const isPreset = typeof st.route === 'string';
+    if (rt.fam !== st.fam) { st.fam = rt.fam; famSel.value = rt.fam; goHome(); }
+    snapshot();
+    if (isPreset) { if (rt.lv > st.maxLv) { st.maxLv = rt.lv; showMax(); } st.lv = rt.lv; showLv(); if (rt.sel) tree().sel = rt.sel; }
+    tree().u = {}; ensureStart();
+    const r = applyCells(rt.cells);
+    if (!isPreset) say(`「${rt.label}」の Lv${rt.lvFor} 用ルートで、Lv${st.lv}のポイント内の${r.n}マスを取りました。${avail() > 0 && !r.left ? `ルートを取り終えて${avail()}pt残っています。` : ''}「元に戻す」で取り消せます。`, 'ok');
+    else say(`プリセット「${rt.name}」を Lv${st.lv} で取り直しました。${r.n}マス。` + (r.left ? `${r.left}マスは${r.short ? 'ポイントが足りないか、' : ''}今のツリーのデータでは取れないため飛ばしました。` : '') + '「元に戻す」で取り消せます。', r.left ? '' : 'ok');
+    changed();
+  };
+
+  // ================= ビルドの保存と共有
+  // ファイルの形式：{ format, version, name, fam, family, lv, sel, points, savedAt, cells: [[マスID, 小ノードで上げたステータス or ''], …] }
+  // cells は取った順。起点は入れない。読み込むときは applyCells で取れる順に取り直す
+  const fileNameFor = name => `asgard-build_${name.replace(/[\\/:*?"<>|\s]+/g, '_')}.json`;
+  // ファイル名からビルド名を決める。保存したときのファイル名のままなら中の名前、付け直したファイル名ならそれを使う。ブラウザが付ける「 (1)」は外す
+  function nameFromFile(fileName, name) {
+    const base = String(fileName || '').replace(/^.*[\\/]/, '').replace(/\.json$/i, '').replace(/\s*\(\d+\)$/, '').trim();
+    if (!base || base + '.json' === fileNameFor(name)) return name;
+    return base.replace(/^asgard-build_/, '').trim().slice(0, 40) || name;
+  }
+  function normPreset(o, id, fileName) {
+    if (!o || o.format !== BUILD_FORMAT || !Array.isArray(o.cells)) return null;
+    const fam = Math.round(+o.fam), lvl = Math.round(+o.lv);
+    if (!S.families[fam - 1] || !(lvl >= 1 && lvl <= 999)) return null;
+    const cells = o.cells.filter(c => Array.isArray(c) && typeof c[0] === 'string' && parse(c[0])).map(c => [c[0], STAT_KEYS.includes(c[1]) ? c[1] : '']);
+    const inner = String(o.name || '').trim().slice(0, 40) || `${famShort(fam)} Lv${lvl}`;
+    const name = fileName ? nameFromFile(fileName, inner) : inner;
+    return { id, name, label: name, fam, lv: lvl, sel: STAT_KEYS.includes(o.sel) ? o.sel : '', cells, savedAt: String(o.savedAt || '') };
+  }
+  const newId = () => 'p:l:' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  function buildFile(name) {
+    const cells = Object.entries(tree().u).filter(([id]) => id !== START[st.fam]).map(([id, v]) => [id, CODE_KEY[v] || '']);
+    return { format: BUILD_FORMAT, version: 1, name, fam: st.fam, family: fam().name, lv: st.lv, sel: selStat(), points: spent(), savedAt: new Date().toISOString(), cells };
+  }
+  const jsonText = obj => JSON.stringify(obj, null, 1) + '\n';
+  async function downloadJson(filename, obj) {
+    const text = jsonText(obj);
+    if (admin.dl) { await admin.dl.save({ filename, data: text }); return; }
+    const a = document.createElement('a'), url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  const nameIn = $('#buildName');
+  $('#saveBuild').onclick = async () => {
+    if (count() <= 1) { say('まだ起点しか取っていません。マスを取ってから保存してください。', 'err'); renderCard(); return; }
+    let name = nameIn.value.trim().slice(0, 40) || `${famShort(st.fam)} Lv${st.lv}`, filename = fileNameFor(name), handle = null;
+    // 保存先を選べるブラウザでは先に選んでもらい、付け直したファイル名をビルド名にする。ファイル名と中の名前がずれないようにするため
+    if (!admin.dl && window.showSaveFilePicker) {
+      try { handle = await window.showSaveFilePicker({ suggestedName: filename, types: [{ description: 'ビルドのファイル', accept: { 'application/json': ['.json'] } }] }); }
+      catch (e) { if (e && e.name === 'AbortError') { say('保存をキャンセルしました。', ''); renderCard(); return; } }
+      if (handle) { name = nameFromFile(handle.name, name); filename = handle.name; nameIn.value = name; }
+    }
+    const file = buildFile(name), old = presets.local.find(p => p.name === name);
+    const p = normPreset(file, old ? old.id : newId());
+    if (old) presets.local[presets.local.indexOf(old)] = p; else presets.local.push(p);
+    savePresets(); st.route = p.id; save(); renderRouteOpts(); draw();
+    try {
+      if (handle) { const w = await handle.createWritable(); await w.write(jsonText(file)); await w.close(); }
+      else await downloadJson(filename, file);
+      say(`「${name}」をプリセットに${old ? '上書き' : '追加'}し、${filename} を保存しました。このファイルを渡すと共有できます。`, 'ok'); }
+    catch (e) { say(`「${name}」をプリセットに${old ? '上書き' : '追加'}しました。ファイルの保存はキャンセルされたか、できませんでした。`, ''); }
+    renderCard();
+  };
+  const readText = file => new Promise((ok, ng) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = ng; fr.readAsText(file); });
+  async function importFiles(files) {
+    let added = 0, same = 0, last = null; const bad = [];
+    for (const file of files) {
+      let p = null;
+      try { p = normPreset(JSON.parse(String(await readText(file)).replace(/^﻿/, '')), newId(), file.name); } catch (e) {}
+      if (!p) { bad.push(file.name); continue; }
+      const key = JSON.stringify([p.name, p.fam, p.lv, p.cells]);
+      const dup = presets.local.find(x => JSON.stringify([x.name, x.fam, x.lv, x.cells]) === key);
+      if (dup) { same++; last = dup; continue; }
+      presets.local.push(p); added++; last = p;
+    }
+    if (added) savePresets();
+    if (last) { st.route = last.id; save(); }
+    renderRouteOpts(); draw();
+    const parts = [];
+    if (added) parts.push(`${added}件のビルドをプリセットに追加しました。「このビルドで取り直す」で反映できます。`);
+    if (same) parts.push(`${same}件はすでに追加済みでした。`);
+    if (bad.length) parts.push(`${bad.join('、')} はビルドのファイルとして読めませんでした。`);
+    say(parts.join(''), bad.length && !added ? 'err' : added ? 'ok' : ''); renderCard();
+  }
+  const fileIn = $('#presetFile');
+  $('#addPreset').onclick = () => fileIn.click();
+  fileIn.onchange = () => { if (fileIn.files.length) importFiles([...fileIn.files]); fileIn.value = ''; };
+  // ファイルをページにドロップしても追加できる
+  const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+  document.addEventListener('dragover', e => { if (hasFiles(e)) e.preventDefault(); });
+  document.addEventListener('drop', e => { if (!hasFiles(e)) return; e.preventDefault(); const fs = [...e.dataTransfer.files].filter(f => /\.json$/i.test(f.name) || f.type === 'application/json'); if (fs.length) importFiles(fs); });
+  $('#delPreset').onclick = () => {
+    const p = presets.local.find(x => x.id === st.route); if (!p) return;
+    if (!delArmed) { delArmed = true; $('#delPreset').textContent = 'もう一度押すと削除します'; return; }
+    presets.local = presets.local.filter(x => x !== p); savePresets(); st.route = -1; save(); renderRouteOpts(); draw();
+    say(`プリセット「${p.name}」を削除しました。ファイルが手元にあれば、また追加できます。`, 'ok'); renderCard();
+  };
+  // presets フォルダのビルド。ローカルサーバーか、export-static.mjs で書き出した公開用で開いたときだけ読める
+  (window.fetch ? fetch('presets.json', { cache: 'no-store' }) : Promise.reject()).then(r => (r.ok ? r.json() : [])).then(list => {
+    if (Array.isArray(list)) presets.folder = list.map(x => normPreset(x && x.data, 'p:f:' + (x && x.file), x && x.file)).filter(Boolean);
+  }).catch(() => {}).then(() => { presets.folderDone = true; renderRouteOpts(); draw(); });
+  $('#undo').onclick = () => {
+    let i = undoStack.length - 1; while (i >= 0 && undoStack[i].fam !== st.fam) i--;
+    if (i < 0) return;
+    const s = undoStack.splice(i, 1)[0]; tree().u = s.u; st.kel = s.kel; say('1つ前の状態に戻しました。', 'ok'); changed();
+  };
+  $('#resetAll').onclick = () => { snapshot(); if (st.lv >= 50) st.kel += 10000; tree().u = {}; ensureStart(); say('ツリーを全部リセットしました。「元に戻す」で取り消せます。', 'ok'); changed(); };
+
+  // ================= 起動
+  function relayout() { const r = size(); W = r.width || 800; H = r.height || 600; readColors(); draw(); }
+  if (window.ResizeObserver) new ResizeObserver(() => { const cx = view.x + W / view.s / 2, cy = view.y + H / view.s / 2; relayout(); view.x = cx - W / view.s / 2; view.y = cy - H / view.s / 2; draw(); }).observe(stage);
+  new MutationObserver(() => { readColors(); draw(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  window.matchMedia?.('(prefers-color-scheme: dark)').addEventListener?.('change', () => { readColors(); draw(); });
+  famSel.value = st.fam; showMax(); showLv(); renderRouteOpts();
+  relayout(); ensureStart(); goHome();
+  if (firstVisit) { const i = S.routes.findIndex(r => r.fam === 2 && r.label.includes('物理火力重視')); st.route = i; routeSel.value = i; say('Knight系の起点を表示しています。薄いオレンジの丸は、おすすめルート「Knight 物理火力重視」の今のレベル用のルートです。レベルを変えると、そのレベル用のルートに切り替わります。'); }
+  changed();
+})();
+</script>
+</body>
+</html>
