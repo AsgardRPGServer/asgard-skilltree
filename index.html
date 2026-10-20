@@ -284,7 +284,7 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
             <li>中心から30マス以上の外周には、効果が1.6倍の強化版中ノードがあり、名前に「・極」が付く。外周の端寄りには、各職業1つずつ金色の大ノード「秘宝」が正五角形に並んでいる。秘宝は大ノード約3個分の効果で、どの職業も自分の秘宝までは33〜37pt、両隣の職業の秘宝までは52〜56ptで届く。</li>
             <li>各職業のエリアには、その職業が苦手な効果を秘宝と同じくらい持つ大ノードが1つずつある。SwordMan系は投射ダメージ、Knight系は魔法ダメージ、Thief系は防御力割合、Mage系は攻撃速度、Archer系は物理ダメージ。辺境には、近くの職業の苦手と得意を半分ずつ持つ「辺境の〇〇」が1つずつある。</li>
             <li>世界樹の加護は装備可能レア度+1の大ノードで、中心から20マスの円に12個、30マスの円に8個が等間隔に並んでいる。</li>
-            <li>途中のマスは、外側のマスを先に解除しないと解除できない。1マスの解除には、今のレベル×100ケルが必要。</li>
+            <li>途中のマスは、外側のマスを先に解除しないと解除できない。1マスの解除には、今のレベルと同じ額のケルが必要。全部リセットは、解除できるマスを1つずつ解除したときの合計。Lv50以下はどちらも無料。</li>
             <li>レベルを下げて使用ポイントがレベルを超えると、ツリーの効果はすべて無効。</li>
             <li>ステータスは FuncPlayerStatus が想定する平均的な装備にツリーを足した値。習得状態はこのブラウザにだけ保存されます。人に渡すときは「ファイルに保存」を使います。</li>
           </ul>
@@ -301,8 +301,9 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
   const $ = s => document.querySelector(s);
   const M = S.macro, R = S.rows, C = S.cols, N = M * R;
   const SMALL = 1, COST = { small: 1, notable: 2, keystone: 3 };
-  // 1マスの解除費用 = 今のレベル × RESET_PER_LV ケル（SkillTree.sk の stSingleResetCostPerLevel と同じ）
-  const RESET_PER_LV = 100;
+  // 1マスの解除費用 = 今のレベル × RESET_PER_LV ケル。全リセットは解除できるマスの数 × 1マスの解除費用。
+  // Lv RESET_FREE_LV 以下はどちらも無料（SkillTree.sk の stSingleResetCostPerLevel・stResetLevelThreshold と同じ。改訂42）
+  const RESET_PER_LV = 1, RESET_FREE_LV = 50;
   // ステータスpt1あたりの効果量の倍率（改訂27。値は sim-data.mjs が design 側から渡す）。小ノードはptを足すだけで上乗せしない（改訂28）
   const STAT_RATE = S.statRate ?? 1;
   const STAT_KEYS = ['AD', 'DF', 'MD', 'AS', 'MS'];
@@ -310,7 +311,7 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
   const STAT_JA = { AD: '攻撃力', DF: '防御力', MD: '魔法力', AS: '攻撃速度', MS: '移動速度' };
   const STAT_VAR = { AD: '--st-ad', DF: '--st-df', MD: '--st-md', AS: '--st-as', MS: '--st-ms' };
   const TYPE_JA = { small: '小ノード', notable: '中ノード', keystone: '大ノード', start: '起点', blocked: '進入不可' };
-  const LABEL = { StatsAD: '攻撃力', StatsDF: '防御力', StatsAS: '攻撃速度', StatsMD: '魔法力', StatsMS: '移動速度', TreeStatsAD: '攻撃力・計算分', TreeStatsDF: '防御力・計算分', TreeStatsAS: '攻撃速度・計算分', TreeStatsMD: '魔法力・計算分', TreeStatsMS: '移動速度・計算分', PDamage: '物理ダメージ%', PMD: '魔法ダメージ%', PDefense: '防御力%', CC: 'クリ率', CS: 'クリ倍率', MCC: 'スキルクリ率', MCS: 'スキルクリ倍率', BaseAS: '特別AS', AS: '攻撃速度倍率', Defense: '防御率', MR: '魔法変換率', MS: '魔法変換倍率', Speed: '移動速度の実値', CD: 'CD短縮%', AddHP: 'HP', AD: '投射ダメージ%', Rare: '装備可能レア度', AddExp: '獲得経験値', AddMoney: '獲得金額', Fire: '火属性', Water: '水属性', Light: '雷属性', Wind: '風属性', Dark: '暗黒属性', Divine: '神聖属性' };
+  const LABEL = { StatsAD: '攻撃力', StatsDF: '防御力', StatsAS: '攻撃速度', StatsMD: '魔法力', StatsMS: '移動速度', PDamage: '物理ダメージ%', PMD: '魔法ダメージ%', PDefense: '防御力%', CC: 'クリ率', CS: 'クリ倍率', MCC: 'スキルクリ率', MCS: 'スキルクリ倍率', BaseAS: '特別AS', AS: '攻撃速度倍率', Defense: '防御率', MR: '魔法変換率', MS: '魔法変換倍率', Speed: '移動速度の実値', CD: 'CD短縮%', AddHP: 'HP', AD: '投射ダメージ%', Rare: '装備可能レア度', AddExp: '獲得経験値', AddMoney: '獲得金額', Fire: '火属性', Water: '水属性', Light: '雷属性', Wind: '風属性', Dark: '暗黒属性', Divine: '神聖属性' };
   const LABEL_FULL = { PDamage: '物理ダメージ割合', PMD: '魔法ダメージ割合', PDefense: '防御力割合', CC: 'クリティカル率', CS: 'クリティカル倍率', MCC: 'スキルクリティカル率', MCS: 'スキルクリティカル倍率', BaseAS: '基礎攻撃速度', CD: 'クールダウン減少', AddHP: '増加HP', AD: '投射ダメージ割合' };
   const VKEY = { PDamage: 'pdmg', PMD: 'pmd', PDefense: 'pdef', AD: 'ad', CC: 'cc', CS: 'cs', MCC: 'mcc', MCS: 'mcs', MR: 'mr', MS: 'ms', CD: 'cd', AddHP: 'addhp', BaseAS: 'bas', AS: 'asMul', Speed: 'spd', Defense: 'def' };
   const OPP = { N: 'S', S: 'N', E: 'W', W: 'E' }, ARROW = { N: '↑', E: '→', S: '↓', W: '←' };
@@ -356,8 +357,8 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
   const enterable = id => { const t = getNode(id)[5]; return t !== 'blocked' && t !== 'start'; };
   const effList = e => (e === '-' ? [] : e.split(';').map(kv => { const [k, v] = kv.split(':'); return [k, +v]; }));
   const effText = ([k, v]) => `${LABEL[k] || k} ${v > 0 ? '+' : ''}${v}`;
-  // マスの表示用。換算専用pt TreeStats* は出さず、上がるステータスptだけを見せる
-  const shownEff = e => effList(e).filter(([k]) => !k.startsWith('TreeStats'));
+  // マスの表示用。改訂52で換算専用pt TreeStats* を廃止したので、効果をそのまま見せる
+  const shownEff = e => effList(e);
 
   // ================= 状態（習得はこのブラウザに保存）
   // 上限レベルの初期値は sim-data から受け取る。ページで変えた値はこのブラウザに残る
@@ -399,7 +400,9 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
   const spent = () => Object.keys(tree().u).reduce((a, id) => a + (COST[getNode(id)[5]] || 0), 0);
   const avail = () => st.lv - spent();
   const count = () => Object.keys(tree().u).length;
-  const resetCost = () => st.lv * RESET_PER_LV;
+  const resetCost = () => (st.lv <= RESET_FREE_LV ? 0 : st.lv * RESET_PER_LV);
+  const resetAllCost = () => Object.keys(tree().u).filter(id => { const t = getNode(id)[5]; return t !== 'start' && t !== 'blocked'; }).length * resetCost();
+  const costText = c => (c > 0 ? `${c.toLocaleString('ja-JP')}ケル` : '無料');
   const undoStack = [];
   const snapshot = () => { undoStack.push({ fam: st.fam, u: { ...tree().u }, kel: st.kel }); if (undoStack.length > 60) undoStack.shift(); };
 
@@ -457,7 +460,7 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
     if (f[5] === 'start') { say('起点は解除できません。', 'err'); return; }
     if (wouldOrphan(id)) { say('このマスの先に習得済みのマスがあるため解除できません。外側のマスから解除してください。', 'err'); return; }
     snapshot(); const cost = resetCost(); st.kel += cost; delete tree().u[id];
-    say(`「${f[8]}」を解除しました。${cost.toLocaleString('ja-JP')}ケルを使いました。`, 'ok'); changed();
+    say(`「${f[8]}」を解除しました。${cost > 0 ? `${costText(cost)}を使いました。` : '費用は無料でした。'}`, 'ok'); changed();
   }
 
   // ================= ステータス計算（①の build-v2.mjs を移植）
@@ -492,14 +495,13 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
       magic: dmg * mr / 100 * 0.2 * s.ms * (1 + s.pmd / 100) * mcrit * cdm,
       proj: (s.atk + dmg * (1 - mr / 100)) * (1 + (s.pdmg + s.ad) / 100) * (1 + ccEff * (s.cs - 1)) * cdm };
   }
-  // pts = ステータスpt（要求ステータスの判定に使う）、calc = 換算に使う値（ステータスpt＋換算専用pt）
+  // pts = ステータスpt、calc = 換算に使う値。改訂52で換算専用pt TreeStats* を廃止したので、今は2つとも同じ値
   function treeEffects() {
     const pts = {}, calc = {}, V = {}, other = [];
     for (const [id, code] of Object.entries(tree().u)) {
       if (code >= 1) { const k = CODE_KEY[code]; pts[k] = (pts[k] || 0) + SMALL; calc[k] = (calc[k] || 0) + SMALL; continue; }
       for (const [k, x] of effList(getNode(id)[6])) {
         if (k.startsWith('Stats')) { const s = k.slice(5); pts[s] = (pts[s] || 0) + x; calc[s] = (calc[s] || 0) + x; }
-        else if (k.startsWith('TreeStats')) { const s = k.slice(9); calc[s] = (calc[s] || 0) + x; }
         else if (VKEY[k]) V[VKEY[k]] = (V[VKEY[k]] || 0) + x;
         else other.push([k, x]);
       }
@@ -657,7 +659,7 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
       eff = `<span class="eff"><span class="dot" style="background:var(${STAT_VAR[k]})"></span>${STAT_JA[k]} +${SMALL}</span>${u ? '' : '<span class="small muted" style="align-self:center">上の「小ノードで上げる」で切り替え</span>'}`;
     } else eff = shownEff(f[6]).map(e => `<span class="eff${e[1] < 0 ? ' neg' : ''}">${esc(effText(e))}</span>`).join('');
     let state, acts = '';
-    if (u) { state = '<span class="state own">習得済み</span>'; if (t !== 'start') acts = `<button type="button" class="big" data-a="reset">${resetCost().toLocaleString('ja-JP')}ケルで解除する</button>`; }
+    if (u) { state = '<span class="state own">習得済み</span>'; if (t !== 'start') acts = `<button type="button" class="big" data-a="reset">${costText(resetCost())}で解除する</button>`; }
     else if (t === 'blocked') state = '<span class="state no">進入不可のマスです</span>';
     else if (t === 'start') state = '<span class="state no">ほかの職業の起点なので取得できません</span>';
     else if (canUnlock(id)) { const ok = avail() >= COST[t]; state = '<span class="state can">今すぐ取れます</span>'; acts = `<button type="button" class="primary big" data-a="take"${ok ? '' : ' disabled'}>${COST[t]}ptで習得する</button>${ok ? '' : `<span class="small" style="color:var(--bad)">残り${avail()}ptでは足りません</span>`}`; }
@@ -682,6 +684,7 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
     $('#jobName').textContent = `${f.jobs[tierOf(L)]} Lv${L}`;
     $('#spent').textContent = sp; $('#allPts').textContent = L;
     const m = $('#meter'); m.classList.toggle('over', over); m.firstElementChild.style.width = clamp(sp / L * 100, 0, 100) + '%';
+    $('#resetAll').textContent = `全部リセット・${costText(resetAllCost())}`;
     $('#ptNote').innerHTML = over ? '<span style="color:var(--bad)">使用ポイントがレベルを超えています。ツリーの効果はすべて無効です。</span>' : `残り <b>${L - sp}</b>pt・習得 ${count()}マス・解除で使ったケル ${st.kel.toLocaleString('ja-JP')}`;
     const tot = statTotals(), totCalc = statTotals('calc');
     $('#pts').innerHTML = STAT_KEYS.map(k => { const b = jobBase(f.f, k, L), tr = tot[k] - b, tc = totCalc[k] - b; return `<a class="pt" href="#spc-${k}" title="${STAT_JA[k]}の効果を見る" style="--c:var(${STAT_VAR[k]})"><span>${STAT_JA[k]}</span><b>${Math.round(tot[k])}</b><span>${tr ? `ツリー+${Math.round(tr)}・計算では+${Math.round(tc * 10) / 10}` : '基礎のみ'}</span></a>`; }).join('');
@@ -710,7 +713,7 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
     $('#statSeg').querySelectorAll('button').forEach(b => b.onclick = () => { tree().sel = b.dataset.k; save(); renderStatSeg(); renderCard(); });
   }
   // 取ったノードの効果を、効果の種類（ステータス）ごとに小・中・大ノード別で合計する
-  const TOTAL_ORDER = ['StatsAD', 'StatsDF', 'StatsMD', 'StatsAS', 'StatsMS', 'TreeStatsAD', 'TreeStatsDF', 'TreeStatsMD', 'TreeStatsAS', 'TreeStatsMS', 'PDamage', 'PMD', 'AD', 'PDefense', 'AddHP', 'Defense', 'CC', 'CS', 'MCC', 'MCS', 'MR', 'MS', 'BaseAS', 'AS', 'CD', 'Speed', 'Rare', 'AddExp', 'AddMoney', 'Fire', 'Water', 'Light', 'Wind', 'Dark', 'Divine'];
+  const TOTAL_ORDER = ['StatsAD', 'StatsDF', 'StatsMD', 'StatsAS', 'StatsMS', 'PDamage', 'PMD', 'AD', 'PDefense', 'AddHP', 'Defense', 'CC', 'CS', 'MCC', 'MCS', 'MR', 'MS', 'BaseAS', 'AS', 'CD', 'Speed', 'Rare', 'AddExp', 'AddMoney', 'Fire', 'Water', 'Light', 'Wind', 'Dark', 'Divine'];
   function renderTotals() {
     const sum = {};
     const add = (k, src, v) => { (sum[k] ||= { small: 0, notable: 0, keystone: 0 })[src] += v; };
@@ -807,8 +810,8 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
         const off = cond && !cond[1](calc);
         return `<tr><td class="l">${lab}<span class="how">${how}${cond ? `<span class="${off ? 'off' : ''}">・${cond[0]}${off ? '・未達' : ''}</span>` : ''}</span></td><td>${now ? fx(now, d) : '—'}</td><td class="${gain > 0 ? 'up' : ''}">${gain > 0 ? '+' + fx(gain, d) : '—'}</td></tr>`;
       }).join('');
-      const tr = tot[k] - base[k], extra = calc[k] - tot[k];
-      const src = `基礎 ${r1(base[k])}${tr ? `・ツリー +${r1(tr)}` : ''}${extra > 1e-9 ? `・計算分 +${r1(extra)}` : ''}`;
+      const tr = tot[k] - base[k];
+      const src = `基礎 ${r1(base[k])}${tr ? `・ツリー +${r1(tr)}` : ''}`;
       const note = k === 'DF' && f.f === 1 ? '<p class="small muted">SwordMan系は防御が高いほど火力も上がる</p>' : '';
       return `<article class="spc" id="spc-${k}" style="--c:var(${STAT_VAR[k]})"><header><span class="dot" style="background:var(--c)"></span><h3>${STAT_JA[k]}</h3><span class="num v">${r1(calc[k])}</span></header>
         <p class="small muted">${src}</p>
@@ -1172,7 +1175,7 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
     if (i < 0) return;
     const s = undoStack.splice(i, 1)[0]; tree().u = s.u; st.kel = s.kel; say('1つ前の状態に戻しました。', 'ok'); changed();
   };
-  $('#resetAll').onclick = () => { snapshot(); if (st.lv >= 50) st.kel += 10000; tree().u = {}; ensureStart(); say('ツリーを全部リセットしました。「元に戻す」で取り消せます。', 'ok'); changed(); };
+  $('#resetAll').onclick = () => { snapshot(); const cost = resetAllCost(); st.kel += cost; tree().u = {}; ensureStart(); say(`ツリーを全部リセットしました。費用は${costText(cost)}でした。「元に戻す」で取り消せます。`, 'ok'); changed(); };
 
   // ================= 起動
   function relayout() { const r = size(); W = r.width || 800; H = r.height || 600; readColors(); draw(); }
