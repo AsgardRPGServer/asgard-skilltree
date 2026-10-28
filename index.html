@@ -166,6 +166,9 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
 .admin hr { border: 0; border-top: 1px solid var(--line); margin: 2px 0; width: 100%; }
 .admin .list { display: flex; flex-wrap: wrap; gap: 6px; max-height: 120px; overflow: auto; }
 .admin .list button { font-size: 12px; padding: 1px 7px; }
+.gcode { display: grid; gap: 8px; }
+.gpage { border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; display: grid; gap: 6px; background: var(--soft); min-width: 0; }
+.gpage code { font-family: var(--f-mono); font-size: 12.5px; word-break: break-all; user-select: all; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -204,7 +207,9 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
       <button type="button" id="addPreset">共有ファイルを追加</button>
       <input type="file" id="presetFile" accept=".json,application/json" multiple hidden>
       <span class="small muted">保存したファイルを渡すと、相手は「共有ファイルを追加」かページへのドロップで、プリセットとして選べます</span>
+      <button type="button" id="gameCodeBtn" aria-expanded="false" aria-controls="gameCode">ゲーム用コード</button>
     </div>
+    <div class="gcode" id="gameCode" hidden></div>
   </div>
 
   <div class="main">
@@ -865,7 +870,63 @@ button[aria-pressed="true"].admin-btn { background: var(--keystone); border-colo
     const id = hitOrder[hitPos], [gr, gc] = gpos(id); centerOn(gr, gc, Math.max(view.s, 30)); select(id); renderHitInfo();
   };
 
-  function changed() { ensureStart(); renderTotals(); renderDetail(); renderPtFx(); renderJobBase(); save(); computeReach(); computeHits(); renderCard(); renderStats(); renderKeystones(); renderStatSeg(); $('#undo').disabled = !undoStack.some(x => x.fam === st.fam); renderRouteLv(); draw(); }
+  // ================= ゲーム用コード
+  // 本と羽ペンに貼ってゲームで読み込むコード。SkillTree.sk の STDecodeBuildCode と同じ形式なので、片方だけ変えないこと
+  // 頭の AST・版・系統・区画数2文字・区画ごとに番号2文字と1行1文字の取得マス・小ノードのステータスを3マスで2文字・検査値2文字。1文字5ビット
+  const CODE_ALPHA = '0123456789ABCDEFGHJKMNPQRSTVWXYZ', CODE_PREFIX = 'AST', CODE_VER = 1;
+  // 本の1ページに貼れる長さ。Java版は1行19文字・14行まで、統合版は1ページ256文字まで
+  const CODE_PAGE = 240;
+  function gameCode() {
+    const by = new Map();
+    for (const [id, val] of Object.entries(tree().u)) {
+      if (id === START[st.fam]) continue;
+      const [mr, mc, r, c] = parse(id), k = (mr - 1) * M + (mc - 1);
+      if (!by.has(k)) by.set(k, []);
+      by.get(k).push([r, c, val || 0]);
+    }
+    const v = [CODE_VER, st.fam], two = x => v.push(x >> 5, x & 31), stats = [], keys = [...by.keys()].sort((a, b) => a - b);
+    two(keys.length);
+    for (const k of keys) {
+      const cells = by.get(k).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+      two(k);
+      for (let r = 1; r <= R; r++) v.push(cells.filter(x => x[0] === r).reduce((a, x) => a | 1 << (C - x[1]), 0));
+      for (const x of cells) stats.push(x[2]);
+    }
+    for (let i = 0; i < stats.length; i += 3) two((stats[i] || 0) * 36 + (stats[i + 1] || 0) * 6 + (stats[i + 2] || 0));
+    two(v.reduce((a, x, i) => a + x * (i % 7 + 1), 0) % 1024);
+    return { text: CODE_PREFIX + v.map(x => CODE_ALPHA[x]).join(''), nodes: stats.length };
+  }
+  async function copyText(t, btn) {
+    let ok = false;
+    try { await navigator.clipboard.writeText(t); ok = true; } catch (e) {}
+    // atwiki の iframe の中ではクリップボードが使えないことがある
+    if (!ok) {
+      const ta = document.createElement('textarea'); ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      ta.remove();
+    }
+    btn.textContent = ok ? 'コピーしました' : 'コピーできませんでした。文字を選んでコピーしてください';
+    setTimeout(() => { btn.textContent = 'コピー'; }, 2000);
+  }
+  function renderGameCode() {
+    const box = $('#gameCode');
+    if (box.hidden) return;
+    if (count() <= 1) { box.innerHTML = '<p class="small muted">まだ起点しか取っていません。マスを取るとコードが出ます。</p>'; return; }
+    const { text, nodes } = gameCode(), pages = [];
+    for (let i = 0; i < text.length; i += CODE_PAGE) pages.push(text.slice(i, i + CODE_PAGE));
+    box.innerHTML = `<p class="small"><b>${esc(fam().name)}</b>・${nodes}マス・本${pages.length}ページ分</p>`
+      + pages.map((t, i) => `<div class="gpage"><div class="bar"><b class="small">${i + 1}ページ目</b><button type="button" data-gp="${i}">コピー</button></div><code>${t}</code></div>`).join('')
+      + '<p class="small muted">本と羽ペンの1ページ目から順に、1ページに1つずつ貼り付けます。本を持ち物に入れたまま、ゲームのスキルツリー画面の右上にある「ビルドコードを読み込む」を2回押すと反映されます。今のツリーは消え、全リセットと同じ費用がかかります。ポイントはゲームのキャラのレベル分だけ使い、足りない分のマスは取りません。</p>';
+    box.querySelectorAll('[data-gp]').forEach(b => { b.onclick = () => copyText(pages[+b.dataset.gp], b); });
+  }
+  $('#gameCodeBtn').onclick = () => {
+    const box = $('#gameCode'); box.hidden = !box.hidden;
+    $('#gameCodeBtn').setAttribute('aria-expanded', String(!box.hidden));
+    renderGameCode();
+  };
+
+  function changed() { ensureStart(); renderGameCode(); renderTotals(); renderDetail(); renderPtFx(); renderJobBase(); save(); computeReach(); computeHits(); renderCard(); renderStats(); renderKeystones(); renderStatSeg(); $('#undo').disabled = !undoStack.some(x => x.fam === st.fam); renderRouteLv(); draw(); }
 
   // ================= ADMINモード（マスの効果・種類・向き・門の編集）
   // 保存先：共有db（nodes / gates）。dbが使えない画面ではこのブラウザだけに保存。サーバー用ファイルとして書き出せる
